@@ -48,18 +48,27 @@ export default async function ArtworkDetailPage({
         .limit(6)
 
     // ดึง characters ที่อยู่ใน artwork นี้
-    const { data: linkedCharacters } = await supabase
+    const { data: linkedCharacters, error: lcError } = await supabase
         .from('artwork_characters')
         .select('characters(id, name, ref_sheet_url, owner_id, profiles(username))')
         .eq('artwork_id', id)
 
+    console.log('linkedCharacters:', JSON.stringify(linkedCharacters))
+    console.log('lcError:', lcError)
+
     // เช็คว่า user คนนี้เป็นเจ้าของ artwork ไหม
     const { data: { user } } = await supabase.auth.getUser()
+    console.log('user:', user?.id)
+
     const { data: myProfile } = user ? await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user.id)
         .single() : { data: null }
+    
+    console.log('myProfile:', myProfile?.id)
+    console.log('artist.id:', artist.id)
+    console.log('isOwner:', myProfile?.id === artist.id)
 
     const isOwner = myProfile?.id === artist.id
 
@@ -121,7 +130,7 @@ export default async function ArtworkDetailPage({
                                 <p className="text-xs text-gray-400">@{artist.username}</p>
                             </div>
                         </Link>
-                        
+
                         {/* Title + Edit */}
                         <div>
                             <div className="flex items-start justify-between gap-3">
