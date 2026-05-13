@@ -45,11 +45,17 @@ export default async function LandingPage() {
                         เริ่มต้นฟรี
                     </Link>
                     <Link
+                        href="/commissions"
+                        className="border px-6 py-3 rounded-full text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                        ดู Commission
+                    </Link>
+                    {/* <Link
                         href="#features"
                         className="border px-6 py-3 rounded-full text-sm text-gray-500 hover:bg-gray-50 transition-colors"
                     >
                         ดูฟีเจอร์
-                    </Link>
+                    </Link> */}
                 </div>
 
                 {artistCount && artistCount > 0 && (

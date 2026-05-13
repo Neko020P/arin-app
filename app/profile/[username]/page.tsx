@@ -28,6 +28,14 @@ export default async function ProfilePage({
         .eq('status', 'published')
         .order('created_at', { ascending: false })
 
+    // ดึง commission listings ของ artist คนนี้
+    const { data: listings } = await supabase
+        .from('commissions')
+        .select('id, title, description, price, currency, turnaround_days, slots, is_open')
+        .eq('artist_id', profile.id)
+        .eq('is_open', true)
+        .order('created_at', { ascending: false })
+
     return (
         <main className="min-h-screen py-12 px-4">
             <div className="max-w-4xl mx-auto">
@@ -126,6 +134,57 @@ export default async function ProfilePage({
                 ) : (
                     <div className="border-2 border-dashed border-gray-200 rounded-xl py-20 text-center">
                         <p className="text-gray-400 text-sm">ยังไม่มีผลงาน</p>
+                    </div>
+                )}
+
+                {/* Commission Listings */}
+                {listings && listings.length > 0 && (
+                    <div className="mt-12">
+                        <div className="flex items-center justify-between mb-5">
+                            <h2 className="font-medium">รับ Commission</h2>
+                            <span className="text-xs bg-green-50 text-green-600 px-3 py-1 rounded-full">
+                                เปิดรับงาน
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {listings.map((l: any) => (
+                                <Link
+                                    key={l.id}
+                                    href={`/commission/${l.id}`}
+                                    className="group border rounded-2xl p-5 hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                                >
+                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                        <h3 className="font-medium group-hover:text-purple-600 transition-colors">
+                                            {l.title}
+                                        </h3>
+                                        <span className="text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded-full shrink-0">
+                                            Open
+                                        </span>
+                                    </div>
+
+                                    {l.description && (
+                                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-3">
+                                            {l.description}
+                                        </p>
+                                    )}
+
+                                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                                        {l.price && (
+                                            <span className="font-medium text-gray-600">
+                                                {l.currency ?? 'USD'} {l.price}
+                                            </span>
+                                        )}
+                                        {l.turnaround_days && (
+                                            <span>{l.turnaround_days} วัน</span>
+                                        )}
+                                        {l.slots > 0 && (
+                                            <span>{l.slots} slots</span>
+                                        )}
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
                     </div>
                 )}
 
