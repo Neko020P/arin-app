@@ -86,7 +86,7 @@ export default async function PublicCharacterPage({
             {/* Owner */}
             <Link
               href={`/profile/${owner.username}`}
-              className="inline-flex items-center gap-2.5 group"
+              className="inline-flex items-center gap-2.5 group mb-4"
             >
               {owner.avatar_url ? (
                 <img
@@ -106,6 +106,16 @@ export default async function PublicCharacterPage({
                 <p className="text-xs text-gray-400">Character owner</p>
               </div>
             </Link>
+
+            {/* Room button */}
+            <div>
+              <Link
+                href={`/character/${character.id}/room`}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm rounded-full hover:bg-purple-700 transition-colors"
+              >
+                Room
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -138,9 +148,8 @@ export default async function PublicCharacterPage({
                     src={artwork.image_url}
                     alt={artwork.title}
                     fill
-                    className={`object-cover transition-transform group-hover:scale-105 ${
-                      artwork.is_nsfw ? 'blur-xl' : ''
-                    }`}
+                    className={`object-cover transition-transform group-hover:scale-105 ${artwork.is_nsfw ? 'blur-xl' : ''
+                      }`}
                     sizes="(max-width: 768px) 50vw, 33vw"
                   />
                   {artwork.is_nsfw && (
