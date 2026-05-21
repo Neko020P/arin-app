@@ -6,6 +6,7 @@ import { PERSONALITY_BUBBLES, PERSONALITY_CONFIG, type Personality } from '@/lib
 type Props = {
     stats: Stats
     posX: number
+    posY: number
     lastAction: string | null
     personality: Personality
 }
@@ -44,7 +45,7 @@ function pickRandom(arr: string[]) {
     return arr[Math.floor(Math.random() * arr.length)]
 }
 
-export default function SpeechBubble({ stats, posX, lastAction, personality }: Props) {
+export default function SpeechBubble({ stats, posX, posY, lastAction, personality }: Props) {
     const [text, setText] = useState<string | null>(null)
     const [visible, setVisible] = useState(false)
 
@@ -87,14 +88,14 @@ export default function SpeechBubble({ stats, posX, lastAction, personality }: P
             setTimeout(() => setVisible(false), 3000)
         }
 
-        const delay = bubbleConfig.bubbleFrequency * (0.8 + Math.random() * 0.4)
+        const delay = 2000 //bubbleConfig.bubbleFrequency * (0.8 + Math.random() * 0.4)
         const t = setTimeout(() => showBubble(), delay)
         return () => clearTimeout(t)
     }, [stats, visible, personality])
-    
+
     useEffect(() => {
-    setVisible(false)
-    setText(null)
+        setVisible(false)
+        setText(null)
     }, [personality])
 
     if (!visible || !text) return null
@@ -103,10 +104,11 @@ export default function SpeechBubble({ stats, posX, lastAction, personality }: P
         <div
             className="absolute pointer-events-none"
             style={{
-                left: `${posX}%`,
-                bottom: '72%',
+                position: 'absolute',
+                left: posX,
+                top: posY - 120,   // ลอยเหนือหัว
                 transform: 'translateX(-50%)',
-                zIndex: 20,
+                zIndex: 30,
                 animation: 'bubbleIn 0.3s ease-out',
             }}
         >

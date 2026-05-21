@@ -11,8 +11,9 @@ type Particle = {
 }
 
 type Props = {
-  trigger: string | null   // action ที่เพิ่งเกิด
-  posX: number             // % ตำแหน่งตัวละคร
+  trigger: string | null
+  posX: number   // px
+  posY: number   // px
   happiness: number
 }
 
@@ -23,7 +24,7 @@ const ACTION_PARTICLES: Record<string, string[]> = {
   sleep: ['💤', '⭐', '🌙'],
 }
 
-export default function ParticleEffect({ trigger, posX, happiness }: Props) {
+export default function ParticleEffect({ trigger, posX, posY, happiness }: Props) {
   const [particles, setParticles] = useState<Particle[]>([])
   let nextId = 0
 
@@ -35,7 +36,7 @@ export default function ParticleEffect({ trigger, posX, happiness }: Props) {
     const newParticles: Particle[] = Array.from({ length: 6 }, (_, i) => ({
       id: nextId++,
       x: posX,
-      y: 40,
+      y: posY,
       emoji: emojis[i % emojis.length],
       vx: (Math.random() - 0.5) * 4,
       vy: -(2 + Math.random() * 3),
@@ -55,7 +56,7 @@ export default function ParticleEffect({ trigger, posX, happiness }: Props) {
       const heart: Particle = {
         id: nextId++,
         x: posX + (Math.random() - 0.5) * 10,
-        y: 30 + Math.random() * 20,
+        y: posY + 30 + Math.random() * 20,
         emoji: Math.random() > 0.5 ? '❤️' : '✨',
         vx: (Math.random() - 0.5) * 1.5,
         vy: -(1 + Math.random()),
@@ -76,10 +77,11 @@ return (
         key={p.id}
         className="absolute pointer-events-none text-lg"
         style={{
-          left: `${p.x}%`,
-          bottom: `${p.y}%`,
-          zIndex: 25,
-          animation: `particleFloat 1.5s ease-out forwards`,
+            position: 'absolute',
+            left: posX + p.x,
+            top: posY + p.y,
+            zIndex: 25,
+            animation: `particleFloat 1.5s ease-out forwards`,
           '--tx': `${(Math.random() > 0.5 ? 1 : -1) * (20 + Math.random() * 30)}px`,
         } as React.CSSProperties}
       >

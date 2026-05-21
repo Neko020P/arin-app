@@ -5,9 +5,9 @@ import type { RoomZone } from './RoomClient'
 
 const ZONE_CONFIG = [
   { type: 'table', label: 'โต๊ะอาหาร', icon: '🍽️' },
-  { type: 'bed',   label: 'เตียง',      icon: '🛏️' },
-  { type: 'bath',  label: 'ห้องน้ำ',    icon: '🛁' },
-  { type: 'play',  label: 'มุมเล่น',    icon: '🎮' },
+  { type: 'bed', label: 'เตียง', icon: '🛏️' },
+  { type: 'bath', label: 'ห้องน้ำ', icon: '🛁' },
+  { type: 'play', label: 'มุมเล่น', icon: '🎮' },
 ] as const
 
 type Props = {
@@ -32,9 +32,8 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
       .upsert({
         character_id: characterId,
         zone_type: type,
-        x: 10 + zones.length * 20,
-        y: 5,
-        width: 18,
+        col: 1 + zones.length * 2,
+        row: 1,
       })
       .select()
       .single()
@@ -54,7 +53,7 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
 
   async function uploadZoneImage(type: string, file: File) {
     setUploading(type)
-    const ext  = file.name.split('.').pop()
+    const ext = file.name.split('.').pop()
     const path = `zones/${characterId}/${type}.${ext}`
 
     const { error: upErr } = await supabase.storage
@@ -62,7 +61,7 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
       .upload(path, file, { upsert: true })
 
     console.log('upload error:', JSON.stringify(upErr))
-    
+
     if (!upErr) {
       const { data: { publicUrl } } = supabase.storage
         .from('character-parts')
@@ -93,6 +92,17 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
       .eq('id', zone.id)
   }
 
+  async function updateGridPos(type: string, col: number, row: number) {
+    const zone = getZone(type)
+    if (!zone) return
+
+    onZonesChange(zones.map(z => z.zone_type === type ? { ...z, col, row } : z))
+
+    await supabase.from('room_zones')
+      .update({ col, row })
+      .eq('id', zone.id)
+  }
+
   return (
     <div className="w-full max-w-sm">
       <button
@@ -118,11 +128,10 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
                   <span className="text-sm text-white/70">{icon} {label}</span>
                   <button
                     onClick={() => active ? removeZone(type) : addZone(type)}
-                    className={`text-xs px-3 py-1 rounded-lg border transition-colors ${
-                      active
-                        ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
-                        : 'border-white/20 text-white/50 hover:bg-white/10'
-                    }`}
+                    className={`text-xs px-3 py-1 rounded-lg border transition-colors ${active
+                      ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
+                      : 'border-white/20 text-white/50 hover:bg-white/10'
+                      }`}
                   >
                     {active ? 'ลบออก' : 'เพิ่มโซน'}
                   </button>
@@ -157,20 +166,28 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
                       )}
                     </div>
 
-                    {/* Position sliders */}
-                    <div className="grid grid-cols-3 gap-2 text-xs text-white/40">
-                      {(['x', 'y', 'width'] as const).map(field => (
-                        <label key={field} className="flex flex-col gap-1">
-                          <span>{field === 'x' ? '← →' : field === 'y' ? '↑ ↓' : 'ขนาด'}</span>
-                          <input
-                            type="range" min={0} max={field === 'width' ? 50 : 80} step={1}
-                            value={zone[field]}
-                            onChange={e => updatePosition(type, field, Number(e.target.value))}
-                            className="w-full"
-                          />
-                          <span className="text-center">{Math.round(zone[field])}%</span>
-                        </label>
-                      ))}
+                    {/* Grid position */}
+                    <div className="grid grid-cols-2 gap-2 text-xs text-white/40">
+                      <label className="flex flex-col gap-1">
+                        <span>← → (Col)</span>
+                        <input
+                          type="range" min={0} max={7} step={1}
+                          value={zone.col ?? 1}
+                          onChange={e => updateGridPos(type, Number(e.target.value), zone.row ?? 1)}
+                          className="w-full"
+                        />
+                        <span className="text-center">Col {zone.col ?? 1}</span>
+                      </label>
+                      <label className="flex flex-col gap-1">
+                        <span>↑ ↓ (Row)</span>
+                        <input
+                          type="range" min={0} max={5} step={1}
+                          value={zone.row ?? 1}
+                          onChange={e => updateGridPos(type, zone.col ?? 1, Number(e.target.value))}
+                          className="w-full"
+                        />
+                        <span className="text-center">Row {zone.row ?? 1}</span>
+                      </label>
                     </div>
                   </>
                 )}
