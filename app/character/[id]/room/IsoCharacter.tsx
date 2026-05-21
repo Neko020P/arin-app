@@ -25,6 +25,7 @@ type Props = {
   originY: number
   pendingAction: { action: string; ts: number } | null
   zones: { zone_type: string; col: number; row: number }[]
+  containerRef: React.RefObject<HTMLDivElement | null>
   onArrive: (action: string) => void
   onActionComplete: () => void
   onPosChange: (pos: GridPos) => void  // บอก parent ว่าอยู่ที่ไหน (สำหรับ bubble)
@@ -56,9 +57,9 @@ function getMood(stats: Stats): Mood {
 
 function getFilter(mood: Mood, energy: number): string {
   const filters = ['drop-shadow(0 4px 12px rgba(0,0,0,0.5))']
-  if (mood === 'happy')    filters.push('brightness(1.15) saturate(1.3)')
+  if (mood === 'happy') filters.push('brightness(1.15) saturate(1.3)')
   else if (mood === 'sad') filters.push('brightness(0.65) saturate(0.4) hue-rotate(200deg)')
-  else if (energy < 30)   filters.push('brightness(0.8) saturate(0.6)')
+  else if (energy < 30) filters.push('brightness(0.8) saturate(0.6)')
   return filters.join(' ')
 }
 
@@ -66,15 +67,16 @@ export default function IsoCharacter({
   spriteUrl, moodSpriteUrl, stats, personality,
   gridCols, gridRows, tileW, tileH, originX, originY,
   pendingAction, zones, onArrive, onActionComplete, onPosChange,
+  containerRef, 
 }: Props) {
   const [pos, setPos] = useState<GridPos>({ col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) })
   const [facing, setFacing] = useState<'left' | 'right'>('right')
   const [spriteLoaded, setSpriteLoaded] = useState(false)
 
-  const posRef   = useRef<GridPos>({ col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) })
-  const modeRef  = useRef<CharacterMode>({ type: 'wander' })
-  const waitRef  = useRef(false)
-  const targetRef = useRef<GridPos>(randomCell(gridCols, gridRows))
+  const posRef = useRef<GridPos>({ col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) })
+  const modeRef = useRef<CharacterMode>({ type: 'wander' })
+  const waitRef = useRef(false)
+  const targetRef = useRef<GridPos | null>(null)
 
   const mood = getMood(stats)
   const config = PERSONALITY_CONFIG[personality] ?? PERSONALITY_CONFIG['friendly']
@@ -140,7 +142,8 @@ export default function IsoCharacter({
       if (waitRef.current) return
 
       const current = posRef.current
-      const target  = targetRef.current
+      if (targetRef.current === null) targetRef.current = randomCell(gridCols, gridRows)
+      const target = targetRef.current
 
       if (current.col === target.col && current.row === target.row) {
         waitRef.current = true
@@ -172,6 +175,13 @@ export default function IsoCharacter({
 
   // แปลง grid pos → screen pos
   const screen = isoToScreen(pos.col, pos.row, tileW, tileH, originX, originY)
+  const rect = containerRef.current?.getBoundingClientRect()
+  const canvasW = (gridCols + gridRows) * (tileW / 2) + tileW
+  const svgH = (gridCols + gridRows) * (tileH / 2)
+  const scaleX = rect ? rect.width / canvasW : 1
+  const scaleY = rect ? rect.height / (svgH + tileH) : 1
+  const cssX = screen.x * scaleX
+  const cssY = screen.y * scaleY
   const breatheSpeed = mood === 'happy' ? '2.5s' : mood === 'sad' ? '5s' : '3.5s'
   const isSitting = stats.energy < 15
 
@@ -179,8 +189,8 @@ export default function IsoCharacter({
     <div
       style={{
         position: 'absolute',
-        left: screen.x,
-        top:  screen.y,
+        left: cssX,
+        top: cssY,
         transform: 'translate(-50%, -100%)',
         height: tileH * 3,
         zIndex: pos.col + pos.row + 10,

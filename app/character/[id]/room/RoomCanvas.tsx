@@ -54,12 +54,33 @@ export default function RoomCanvas({
 
   // origin = จุดบนสุดของ grid อยู่กลาง canvas แนวนอน
   // คำนวณเป็น % แล้วแปลงใน render
-  const originX = (GRID_COLS + GRID_ROWS) * (TILE_W / 2) / 2
+  //const originX = (GRID_COLS + GRID_ROWS) * (TILE_W / 2) / 2 + TILE_W / 2
+  const canvasW = (GRID_COLS + GRID_ROWS) * (TILE_W / 2) + TILE_W
+  const originX = canvasW / 2
   const originY = TILE_H
+  console.log('canvas:', { canvasW, originX, originY })
 
   // screen pos ของ character สำหรับ bubble/particle
   const charScreen = isoToScreen(charPos.col, charPos.row, TILE_W, TILE_H, originX, originY)
-  const canvasW = (GRID_COLS + GRID_ROWS) * (TILE_W / 2) + TILE_W
+  const svgH = (GRID_COLS + GRID_ROWS) * (TILE_H / 2)
+  const rect = containerRef.current?.getBoundingClientRect()
+  const containerRect = containerRef.current?.getBoundingClientRect()
+  const containerW = containerRef.current?.clientWidth ?? canvasW
+  const containerH = containerRef.current?.clientHeight ?? (svgH + TILE_H)
+  const scaleX = rect ? rect.width / canvasW : 1
+  const scaleY = rect ? rect.height / (svgH + TILE_H) : 1
+  const charScreenCSS = {
+    x: charScreen.x * scaleX,
+    y: charScreen.y * scaleY,
+  }
+  console.log('bubble pos:', {
+    charScreen,
+    containerRect,
+    scaleX: containerRect ? containerRect.width / canvasW : 1,
+    scaleY: containerRect ? containerRect.height / (svgH + TILE_H) : 1,
+    charScreenCSS
+  })
+
   console.log('charScreen:', charScreen, 'charPos:', charPos)
 
   return (
@@ -114,7 +135,7 @@ export default function RoomCanvas({
           onZoneMove={(id, col, row) => {
             onZonesChange(id, col, row)  // ← ส่ง 3 arguments ตรงๆ
           }}
-          canvasW={canvasW} 
+          canvasW={canvasW}
         />
 
         {/* Character */}
@@ -134,6 +155,7 @@ export default function RoomCanvas({
           onArrive={(action) => setLastAction(action)}
           onActionComplete={() => { setLastAction(null); onActionComplete() }}
           onPosChange={setCharPos}
+          containerRef={containerRef}
         />
 
         {/* Speech Bubble */}

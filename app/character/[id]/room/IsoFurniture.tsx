@@ -30,12 +30,42 @@ export default function IsoFurniture({
     editMode, containerRef, onZoneMove, onHighlight,
     gridCols, gridRows,
 }: Props) {
-    const draggingRef = useRef<string | null>(null)  // zone id ที่กำลัง drag
+    const draggingRef = useRef<string | null>(null)
+
+    const canvasW = (gridCols + gridRows) * (tileW / 2) + tileW
+    const svgW = (gridCols + gridRows) * (tileW / 2)
+    const viewBoxX = originX - svgW / 2
+    const viewBoxY = originY - tileH / 2
+
+    function isoToCSS(col: number, row: number): { x: number; y: number } {
+        const { x, y } = isoToScreen(col, row, tileW, tileH, originX, originY)
+        const rect = containerRef.current?.getBoundingClientRect()
+        if (!rect) return { x: 0, y: 0 }
+        const svgH = (gridCols + gridRows) * (tileH / 2)
+        const scaleX = rect.width / canvasW
+        const scaleY = rect.height / (svgH + tileH)
+        // x, y จาก isoToScreen คือ canvas coordinate ตรงๆ
+        const cssX = x * scaleX
+        const cssY = y * scaleY
+        return { x: cssX, y: cssY }
+    }
 
     const getContainerRect = useCallback(() => {
         if (!containerRef || !containerRef.current) return null
         return containerRef.current.getBoundingClientRect()
     }, [containerRef])
+
+    function toSVGCoord(clientX: number, clientY: number, rect: DOMRect): { x: number; y: number } {
+        const scaleX = rect.width / canvasW
+        const svgH = (gridCols + gridRows) * (tileH / 2)
+        const scaleY = rect.height / (svgH + tileH)
+
+        // แปลงเป็น canvas coordinate ตรงๆ ไม่บวก viewBox offset
+        const x = (clientX - rect.left) / scaleX
+        const y = (clientY - rect.top) / scaleY
+
+        return { x, y }
+    }
 
     function handleMouseDown(e: React.MouseEvent, zoneId: string) {
         if (!editMode) return
@@ -45,16 +75,8 @@ export default function IsoFurniture({
         function handleMouseMove(e: MouseEvent) {
             const rect = getContainerRect()
             if (!rect) return
-
-            // คำนวณ scale เพราะ SVG ถูก scale ให้พอดี container
-            const canvasW = (gridCols + gridRows) * (tileW / 2) + tileW
-            const scaleX = rect.width / canvasW
-
-            // แปลง mouse → canvas coordinate
-            const screenX = (e.clientX - rect.left) / scaleX
-            const screenY = (e.clientY - rect.top) / scaleX  // ใช้ scaleX เดียวกันเพราะ aspect ratio fixed
-
-            const { col, row } = screenToGrid(screenX, screenY, tileW, tileH, originX, originY)
+            const { x, y } = toSVGCoord(e.clientX, e.clientY, rect)
+            const { col, row } = screenToGrid(x, y, tileW, tileH, originX, originY)
             const clampedCol = Math.max(0, Math.min(gridCols - 1, col))
             const clampedRow = Math.max(0, Math.min(gridRows - 1, row))
             onHighlight({ col: clampedCol, row: clampedRow })
@@ -63,16 +85,13 @@ export default function IsoFurniture({
         function handleMouseUp(e: MouseEvent) {
             const rect = getContainerRect()
             if (rect && draggingRef.current) {
-                const screenX = e.clientX - rect.left
-                const screenY = e.clientY - rect.top
-
-                const { col, row } = screenToGrid(screenX, screenY, tileW, tileH, originX, originY)
+                const { x, y } = toSVGCoord(e.clientX, e.clientY, rect)
+                const { col, row } = screenToGrid(x, y, tileW, tileH, originX, originY)
                 const clampedCol = Math.max(0, Math.min(gridCols - 1, col))
                 const clampedRow = Math.max(0, Math.min(gridRows - 1, row))
-
+                console.log('mouseup col/row:', { col, row, clampedCol, clampedRow })
                 onZoneMove(draggingRef.current, clampedCol, clampedRow)
             }
-
             draggingRef.current = null
             onHighlight(null)
             window.removeEventListener('mousemove', handleMouseMove)
@@ -83,7 +102,6 @@ export default function IsoFurniture({
         window.addEventListener('mouseup', handleMouseUp)
     }
 
-    // Touch support
     function handleTouchStart(e: React.TouchEvent, zoneId: string) {
         if (!editMode) return
         draggingRef.current = zoneId
@@ -92,10 +110,8 @@ export default function IsoFurniture({
             const touch = e.touches[0]
             const rect = getContainerRect()
             if (!rect) return
-
-            const screenX = touch.clientX - rect.left
-            const screenY = touch.clientY - rect.top
-            const { col, row } = screenToGrid(screenX, screenY, tileW, tileH, originX, originY)
+            const { x, y } = toSVGCoord(touch.clientX, touch.clientY, rect)
+            const { col, row } = screenToGrid(x, y, tileW, tileH, originX, originY)
             const clampedCol = Math.max(0, Math.min(gridCols - 1, col))
             const clampedRow = Math.max(0, Math.min(gridRows - 1, row))
             onHighlight({ col: clampedCol, row: clampedRow })
@@ -105,14 +121,12 @@ export default function IsoFurniture({
             const touch = e.changedTouches[0]
             const rect = getContainerRect()
             if (rect && draggingRef.current) {
-                const screenX = touch.clientX - rect.left
-                const screenY = touch.clientY - rect.top
-                const { col, row } = screenToGrid(screenX, screenY, tileW, tileH, originX, originY)
+                const { x, y } = toSVGCoord(touch.clientX, touch.clientY, rect)
+                const { col, row } = screenToGrid(x, y, tileW, tileH, originX, originY)
                 const clampedCol = Math.max(0, Math.min(gridCols - 1, col))
                 const clampedRow = Math.max(0, Math.min(gridRows - 1, row))
                 onZoneMove(draggingRef.current, clampedCol, clampedRow)
             }
-
             draggingRef.current = null
             onHighlight(null)
             window.removeEventListener('touchmove', handleTouchMove)
@@ -128,7 +142,7 @@ export default function IsoFurniture({
             {zones.map(zone => {
                 const col = zone.col ?? 1
                 const row = zone.row ?? 1
-                const { x, y } = isoToScreen(col, row, tileW, tileH, originX, originY)
+                const { x, y } = isoToCSS(col, row)
 
                 return (
                     <div

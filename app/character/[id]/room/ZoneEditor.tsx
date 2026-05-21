@@ -14,9 +14,11 @@ type Props = {
   characterId: string
   zones: RoomZone[]
   onZonesChange: (zones: RoomZone[]) => void
+  gridCols: number 
+  gridRows: number
 }
 
-export default function ZoneEditor({ characterId, zones = [], onZonesChange }: Props) {
+export default function ZoneEditor({ characterId, zones = [], onZonesChange, gridCols, gridRows }: Props) {
   const supabase = createClient()
   const [uploading, setUploading] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
@@ -171,7 +173,7 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
                       <label className="flex flex-col gap-1">
                         <span>← → (Col)</span>
                         <input
-                          type="range" min={0} max={7} step={1}
+                          type="range" min={0} max={gridCols - 1} step={1}
                           value={zone.col ?? 1}
                           onChange={e => updateGridPos(type, Number(e.target.value), zone.row ?? 1)}
                           className="w-full"
@@ -181,7 +183,7 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
                       <label className="flex flex-col gap-1">
                         <span>↑ ↓ (Row)</span>
                         <input
-                          type="range" min={0} max={5} step={1}
+                          type="range" min={0} max={gridRows - 1} step={1}
                           value={zone.row ?? 1}
                           onChange={e => updateGridPos(type, zone.col ?? 1, Number(e.target.value))}
                           className="w-full"

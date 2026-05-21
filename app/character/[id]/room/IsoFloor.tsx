@@ -28,8 +28,8 @@ export function screenToGrid(
 ) {
   const dx = screenX - originX
   const dy = screenY - originY
-  const col = Math.round((dx / (tileW / 2) + dy / (tileH / 2)) / 2)
-  const row = Math.round((dy / (tileH / 2) - dx / (tileW / 2)) / 2)
+  const col = Math.floor((dx / (tileW / 2) + dy / (tileH / 2)) / 2)  // ← round → floor
+  const row = Math.floor((dy / (tileH / 2) - dx / (tileW / 2)) / 2)  // ← round → floor
   return { col, row }
 }
 
