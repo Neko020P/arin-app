@@ -1,83 +1,211 @@
 'use client'
+import { useRef, useState } from 'react'
+import type { Stats } from '@/lib/stats'
+import type { RoomZone } from './RoomClient'
+import type { Personality } from '@/lib/personality'
+import IsoFloor from './IsoFloor'
+import IsoCharacter, { type GridPos } from './IsoCharacter'
+import IsoFurniture from './IsoFurniture'
+import SpeechBubble from './SpeechBubble'
+import ParticleEffect from './ParticleEffect'
+import { isoToScreen } from './IsoFloor'
+import { screenToGrid } from './IsoFloor'
 
-import { useEffect, useRef, useState } from 'react'
+// ค่า grid คงที่ — ปรับได้
+const GRID_COLS = 10
+const GRID_ROWS = 10
+const TILE_W = 100   // px
+const TILE_H = 50   // px
+
+function getCurrentMoodSprite(stats: Stats, sprites: Record<string, string>): string | null {
+  if (stats.energy < 20) return sprites.tired ?? null
+  if (stats.happiness < 20) return sprites.sad ?? null
+  if (stats.hunger < 20) return sprites.angry ?? null
+  const avg = (stats.hunger + stats.happiness + stats.energy) / 3
+  if (avg > 75) return sprites.happy ?? null
+  return null
+}
 
 type Props = {
   spriteUrl: string
   bgUrl: string | null
+  stats: Stats
+  zones: RoomZone[]
+  pendingAction: { action: string; ts: number } | null
+  onActionComplete: () => void
+  moodSprites: Record<string, string>
+  personality: Personality
+  isOwner: boolean   // ← เพิ่ม
+  onZonesChange: (id: string, col: number, row: number) => void
 }
 
-export default function RoomCanvas({ spriteUrl, bgUrl }: Props) {
-  const [spriteLoaded, setSpriteLoaded] = useState(false)
+export default function RoomCanvas({
+  spriteUrl, bgUrl, stats, zones,
+  pendingAction, onActionComplete,
+  moodSprites, personality, isOwner, onZonesChange
+}: Props) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [lastAction, setLastAction] = useState<string | null>(null)
+  const [charPos, setCharPos] = useState<GridPos>({ col: 4, row: 3 })
+  const [editMode, setEditMode] = useState(false)
+  const [highlightCell, setHighlightCell] = useState<{ col: number; row: number } | null>(null)
+
+  const moodSpriteUrl = getCurrentMoodSprite(stats, moodSprites)
+
+  // origin = จุดบนสุดของ grid อยู่กลาง canvas แนวนอน
+  // คำนวณเป็น % แล้วแปลงใน render
+  //const originX = (GRID_COLS + GRID_ROWS) * (TILE_W / 2) / 2 + TILE_W / 2
+  const canvasW = (GRID_COLS + GRID_ROWS) * (TILE_W / 2) + TILE_W
+  const originX = canvasW / 2
+  const originY = TILE_H
+  console.log('canvas:', { canvasW, originX, originY })
+
+  // screen pos ของ character สำหรับ bubble/particle
+  const charScreen = isoToScreen(charPos.col, charPos.row, TILE_W, TILE_H, originX, originY)
+  const svgH = (GRID_COLS + GRID_ROWS) * (TILE_H / 2)
+  const rect = containerRef.current?.getBoundingClientRect()
+  const containerRect = containerRef.current?.getBoundingClientRect()
+  const containerW = containerRef.current?.clientWidth ?? canvasW
+  const containerH = containerRef.current?.clientHeight ?? (svgH + TILE_H)
+  const scaleX = rect ? rect.width / canvasW : 1
+  const scaleY = rect ? rect.height / (svgH + TILE_H) : 1
+  const charScreenCSS = {
+    x: charScreen.x * scaleX,
+    y: charScreen.y * scaleY,
+  }
+  console.log('bubble pos:', {
+    charScreen,
+    containerRect,
+    scaleX: containerRect ? containerRect.width / canvasW : 1,
+    scaleY: containerRect ? containerRect.height / (svgH + TILE_H) : 1,
+    charScreenCSS
+  })
+
+  console.log('charScreen:', charScreen, 'charPos:', charPos)
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-2xl"
+      ref={containerRef}
       style={{
-        maxWidth: 640,
+        position: 'relative',
+        width: '100%',
         aspectRatio: '16/9',
-        background: bgUrl ? undefined : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        overflow: 'hidden',
+        borderRadius: 16,
+        background: bgUrl
+          ? undefined
+          : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
       }}
     >
       {/* Background */}
       {bgUrl && (
-        <img
-          src={bgUrl}
-          alt="room background"
-          className="absolute inset-0 w-full h-full object-cover"
+        <img src={bgUrl} alt="bg"
+          className="absolute inset-0 w-full h-full object-cover" />
+      )}
+
+      {/* Isometric scene */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        overflow: 'hidden',
+      }}>
+        {/* Floor grid */}
+        <IsoFloor
+          cols={GRID_COLS}
+          rows={GRID_ROWS}
+          tileW={TILE_W}
+          tileH={TILE_H}
+          originX={originX}
+          originY={originY}
+          highlightCell={highlightCell}
         />
-      )}
 
-      {/* Default bg ถ้าไม่มี */}
-      {!bgUrl && (
-        <div className="absolute inset-0 flex items-end justify-center pb-8">
-          <div
-            className="w-full h-px opacity-20"
-            style={{ background: 'linear-gradient(90deg, transparent, #fff, transparent)' }}
-          />
-        </div>
-      )}
-
-      {/* Character sprite */}
-      <div
-        className="absolute"
-        style={{
-          bottom: '15%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          height: '55%',
-        }}
-      >
-        <img
-          src={spriteUrl}
-          alt="character"
-          onLoad={() => setSpriteLoaded(true)}
-          className="h-full w-auto object-contain select-none"
-          style={{
-            animation: spriteLoaded ? 'breathe 3.5s ease-in-out infinite' : 'none',
-            transformOrigin: 'bottom center',
-            imageRendering: 'pixelated',
-            filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.4))',
+        {/* Furniture */}
+        <IsoFurniture
+          zones={zones}
+          tileW={TILE_W}
+          tileH={TILE_H}
+          originX={originX}
+          originY={originY}
+          editMode={editMode}             // ← เพิ่ม
+          containerRef={containerRef as React.RefObject<HTMLDivElement>}
+          gridCols={GRID_COLS}            // ← เพิ่ม
+          gridRows={GRID_ROWS}            // ← เพิ่ม
+          onHighlight={setHighlightCell}  // ← เพิ่ม
+          onZoneMove={(id, col, row) => {
+            onZonesChange(id, col, row)  // ← ส่ง 3 arguments ตรงๆ
           }}
-          draggable={false}
+          canvasW={canvasW}
+        />
+
+        {/* Character */}
+        <IsoCharacter
+          spriteUrl={spriteUrl}
+          moodSpriteUrl={moodSpriteUrl}
+          stats={stats}
+          personality={personality}
+          gridCols={GRID_COLS}
+          gridRows={GRID_ROWS}
+          tileW={TILE_W}
+          tileH={TILE_H}
+          originX={originX}
+          originY={originY}
+          pendingAction={pendingAction}
+          zones={zones.map(z => ({ zone_type: z.zone_type, col: z.col ?? 1, row: z.row ?? 1 }))}
+          onArrive={(action) => setLastAction(action)}
+          onActionComplete={() => { setLastAction(null); onActionComplete() }}
+          onPosChange={setCharPos}
+          containerRef={containerRef}
+        />
+
+        {/* Speech Bubble */}
+        <SpeechBubble
+          stats={stats}
+          posX={charScreen.x}
+          posY={charScreen.y}
+          lastAction={lastAction}
+          personality={personality}
+        />
+
+        {/* Particles */}
+        <ParticleEffect
+          trigger={lastAction}
+          posX={charScreen.x}
+          posY={charScreen.y}
+          happiness={stats.happiness}
         />
       </div>
 
-      {/* กรณียังโหลดไม่เสร็จ */}
-      {!spriteLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
-        </div>
+      {/* Edit Mode Button */}
+      {isOwner && (
+        <button
+          onClick={() => setEditMode(e => !e)}
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            zIndex: 50,
+            background: editMode ? 'rgba(120,180,255,0.3)' : 'rgba(0,0,0,0.4)',
+            border: editMode ? '1px solid rgba(120,180,255,0.6)' : '1px solid rgba(255,255,255,0.2)',
+            color: 'white',
+            padding: '4px 12px',
+            borderRadius: 8,
+            fontSize: 12,
+            cursor: 'pointer',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          {editMode ? '✅ บันทึก' : '✏️ จัดห้อง'}
+        </button>
       )}
 
-      {/* CSS animation */}
       <style>{`
         @keyframes breathe {
-          0%   { transform: scaleX(1)    scaleY(1);    }
+          0%   { transform: scaleY(1); }
           30%  { transform: scaleX(1.02) scaleY(0.98); }
           50%  { transform: scaleX(0.98) scaleY(1.02); }
           70%  { transform: scaleX(1.01) scaleY(0.99); }
-          100% { transform: scaleX(1)    scaleY(1);    }
+          100% { transform: scaleY(1); }
         }
       `}</style>
     </div>
