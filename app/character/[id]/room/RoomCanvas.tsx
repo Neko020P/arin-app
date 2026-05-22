@@ -10,6 +10,7 @@ import SpeechBubble from './SpeechBubble'
 import ParticleEffect from './ParticleEffect'
 import { isoToScreen } from './IsoFloor'
 import { screenToGrid } from './IsoFloor'
+import IsoVisitor, { type VisitorData } from './IsoVisitor'
 
 // ค่า grid คงที่ — ปรับได้
 const GRID_COLS = 10
@@ -37,12 +38,16 @@ type Props = {
   personality: Personality
   isOwner: boolean   // ← เพิ่ม
   onZonesChange: (id: string, col: number, row: number) => void
+  visitors: VisitorData[]
+  onVisitorLeave: (characterId: string) => void
 }
 
 export default function RoomCanvas({
   spriteUrl, bgUrl, stats, zones,
   pendingAction, onActionComplete,
-  moodSprites, personality, isOwner, onZonesChange
+  moodSprites, personality, isOwner, onZonesChange,
+  visitors,
+  onVisitorLeave,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [lastAction, setLastAction] = useState<string | null>(null)
@@ -58,7 +63,7 @@ export default function RoomCanvas({
   const canvasW = (GRID_COLS + GRID_ROWS) * (TILE_W / 2) + TILE_W
   const originX = canvasW / 2
   const originY = TILE_H
-  console.log('canvas:', { canvasW, originX, originY })
+  //console.log('canvas:', { canvasW, originX, originY })
 
   // screen pos ของ character สำหรับ bubble/particle
   const charScreen = isoToScreen(charPos.col, charPos.row, TILE_W, TILE_H, originX, originY)
@@ -73,15 +78,15 @@ export default function RoomCanvas({
     x: charScreen.x * scaleX,
     y: charScreen.y * scaleY,
   }
-  console.log('bubble pos:', {
-    charScreen,
-    containerRect,
-    scaleX: containerRect ? containerRect.width / canvasW : 1,
-    scaleY: containerRect ? containerRect.height / (svgH + TILE_H) : 1,
-    charScreenCSS
-  })
+  // console.log('bubble pos:', {
+  //   charScreen,
+  //   containerRect,
+  //   scaleX: containerRect ? containerRect.width / canvasW : 1,
+  //   scaleY: containerRect ? containerRect.height / (svgH + TILE_H) : 1,
+  //   charScreenCSS
+  // })
 
-  console.log('charScreen:', charScreen, 'charPos:', charPos)
+  //console.log('charScreen:', charScreen, 'charPos:', charPos)
 
   return (
     <div
@@ -158,6 +163,23 @@ export default function RoomCanvas({
           containerRef={containerRef}
         />
 
+        {/* Visitors */}
+        {visitors.map((visitor, i) => (
+          <IsoVisitor
+            key={`visitor-${visitor.characterId ?? i}`}
+            visitor={visitor}
+            gridCols={GRID_COLS}
+            gridRows={GRID_ROWS}
+            tileW={TILE_W}
+            tileH={TILE_H}
+            originX={originX}
+            originY={originY}
+            containerRef={containerRef}
+            canvasW={canvasW}
+            onLeave={onVisitorLeave}
+          />
+        ))}
+
         {/* Speech Bubble */}
         <SpeechBubble
           stats={stats}
@@ -200,14 +222,64 @@ export default function RoomCanvas({
       )}
 
       <style>{`
-        @keyframes breathe {
-          0%   { transform: scaleY(1); }
-          30%  { transform: scaleX(1.02) scaleY(0.98); }
-          50%  { transform: scaleX(0.98) scaleY(1.02); }
-          70%  { transform: scaleX(1.01) scaleY(0.99); }
-          100% { transform: scaleY(1); }
-        }
-      `}</style>
+  @keyframes breathe {
+    0%   { transform: scaleY(1); }
+    30%  { transform: scaleX(1.02) scaleY(0.98); }
+    50%  { transform: scaleX(0.98) scaleY(1.02); }
+    70%  { transform: scaleX(1.01) scaleY(0.99); }
+    100% { transform: scaleY(1); }
+  }
+  @keyframes walk {
+    0%   { transform: translateY(0px) rotate(-2deg); }
+    25%  { transform: translateY(-6px) rotate(0deg); }
+    50%  { transform: translateY(0px) rotate(2deg); }
+    75%  { transform: translateY(-4px) rotate(0deg); }
+    100% { transform: translateY(0px) rotate(-2deg); }
+  }
+  @keyframes sit {
+    0%   { transform: scaleY(0.6) translateY(30%) rotate(-1deg); }
+    50%  { transform: scaleY(0.62) translateY(29%) rotate(1deg); }
+    100% { transform: scaleY(0.6) translateY(30%) rotate(-1deg); }
+  }
+  @keyframes act_feed {
+    0%   { transform: translateY(0px) rotate(0deg); }
+    20%  { transform: translateY(-8px) rotate(-5deg); }
+    40%  { transform: translateY(0px) rotate(5deg); }
+    60%  { transform: translateY(-4px) rotate(-3deg); }
+    80%  { transform: translateY(0px) rotate(3deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+  }
+  @keyframes act_play {
+    0%   { transform: translateY(0px) scaleX(1); }
+    25%  { transform: translateY(-12px) scaleX(1.05); }
+    50%  { transform: translateY(0px) scaleX(0.95); }
+    75%  { transform: translateY(-8px) scaleX(1.05); }
+    100% { transform: translateY(0px) scaleX(1); }
+  }
+  @keyframes act_bath {
+    0%   { transform: rotate(0deg); }
+    15%  { transform: rotate(-8deg) translateX(-3px); }
+    30%  { transform: rotate(8deg) translateX(3px); }
+    45%  { transform: rotate(-6deg) translateX(-2px); }
+    60%  { transform: rotate(6deg) translateX(2px); }
+    100% { transform: rotate(0deg); }
+  }
+  @keyframes act_sleep {
+    0%   { transform: scaleY(0.5) translateY(40%); }
+    50%  { transform: scaleY(0.52) translateY(38%); }
+    100% { transform: scaleY(0.5) translateY(40%); }
+  }
+  @keyframes happy_bounce {
+    0%   { transform: translateY(0px); }
+    50%  { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+  @keyframes sad_droop {
+    0%   { transform: translateY(0px) scaleX(1); }
+    50%  { transform: translateY(2px) scaleX(0.97); }
+    100% { transform: translateY(0px) scaleX(1); }
+  }
+`}</style>
     </div>
   )
 }
