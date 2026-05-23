@@ -1,3 +1,4 @@
+//components/Navbar.tsx
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import NavbarClient from './NavbarClient'

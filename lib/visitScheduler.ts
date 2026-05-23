@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { createVisitMemory } from '@/lib/memory'
+import { applySocialBoost } from '@/lib/stats'
 
 const VISIT_CHANCE: Record<string, number> = {
   stranger: 0.99,
@@ -6,12 +8,11 @@ const VISIT_CHANCE: Record<string, number> = {
   rival: 0.99,
 }
 
-const VISIT_DURATION = 30 * 1000 // 30 วิ (เทส)
+const VISIT_DURATION = 30 * 1000
 
 export async function runVisitScheduler(characterId: string) {
   const supabase = await createClient()
 
-  // เช็คว่าตัวละครนี้กำลัง visit อยู่ที่อื่นไหม — ถ้าใช่ ไม่รับแขก
   const { data: outgoing } = await supabase
     .from('character_visits')
     .select('id')
@@ -19,21 +20,27 @@ export async function runVisitScheduler(characterId: string) {
     .gt('ends_at', new Date().toISOString())
     .maybeSingle()
 
-  if (outgoing) return [] // กำลังออกไปเยี่ยมอยู่ ไม่รับแขก
+  if (outgoing) return []
 
-  // ลบ visit ที่หมดเวลาแล้ว
   await supabase
     .from('character_visits')
     .delete()
     .lt('ends_at', new Date().toISOString())
 
-  // ดึง relationships
   const { data: relationships } = await supabase
     .from('character_relationships')
     .select('*, target:target_id(id, name, room_sprite_url, ref_sheet_url, personality)')
     .eq('character_id', characterId)
 
   if (!relationships) return []
+
+  const { data: hostCharacter } = await supabase
+    .from('characters')
+    .select('id, name')
+    .eq('id', characterId)
+    .single()
+
+  if (!hostCharacter) return []
 
   const visitors: {
     characterId: string
@@ -50,7 +57,6 @@ export async function runVisitScheduler(characterId: string) {
     const target = rel.target as any
     if (!target) continue
 
-    // เช็คว่า target กำลัง visit อยู่ที่อื่นไหม
     const { data: targetOut } = await supabase
       .from('character_visits')
       .select('id')
@@ -58,9 +64,8 @@ export async function runVisitScheduler(characterId: string) {
       .gt('ends_at', new Date().toISOString())
       .maybeSingle()
 
-    if (targetOut) continue // target ไม่อยู่บ้าน
+    if (targetOut) continue
 
-    // เช็คว่า target กำลังมาเยี่ยม characterId อยู่ไหม (ป้องกัน cross-visit พร้อมกัน)
     const { data: targetIncoming } = await supabase
       .from('character_visits')
       .select('id')
@@ -69,27 +74,60 @@ export async function runVisitScheduler(characterId: string) {
       .gt('ends_at', new Date().toISOString())
       .maybeSingle()
 
-    if (targetIncoming) continue // target กำลังมาหาเราอยู่ รอก่อน
+    if (targetIncoming) continue
 
-    // cooldown
     if (rel.last_visit) {
       const diff = Date.now() - new Date(rel.last_visit).getTime()
       if (diff < 15 * 1000) continue
     }
 
-    // สร้าง visit record
     const endsAt = new Date(Date.now() + VISIT_DURATION).toISOString()
-    const { error } = await supabase
+
+    // insert แทน upsert — ถ้ามี visit อยู่แล้วจะ error → ข้ามไป
+    const { error: insertError } = await supabase
       .from('character_visits')
-      .upsert({
+      .insert({
         visitor_id: target.id,
         host_id: characterId,
         ends_at: endsAt,
-      }, { onConflict: 'visitor_id' })
+      })
 
-    if (error) continue
+    if (insertError) continue
 
-    // update relationship
+    // boost social ของ host เมื่อมี visitor
+    const { data: hostStats } = await supabase
+      .from('character_stats')
+      .select('*')
+      .eq('character_id', characterId)
+      .single()
+
+    if (hostStats) {
+      const boosted = applySocialBoost({
+        hunger: hostStats.hunger,
+        happiness: hostStats.happiness,
+        energy: hostStats.energy,
+        social: hostStats.social ?? 80,
+      }, rel.tier)
+
+      await supabase
+        .from('character_stats')
+        .update({
+          social: Math.round(boosted.social),
+          happiness: Math.round(boosted.happiness),
+          last_updated: new Date().toISOString(),
+        })
+        .eq('character_id', characterId)
+    }
+
+    // insert สำเร็จ = visit ใหม่ → สร้าง memory
+    await createVisitMemory(
+      characterId,
+      hostCharacter.name,
+      target.id,
+      target.name,
+      rel.tier,
+    )
+
     const newCount = rel.visit_count + 1
     let newTier = rel.tier
     if (rel.tier === 'stranger' && newCount >= 3) newTier = 'friend'

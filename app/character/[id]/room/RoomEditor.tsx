@@ -243,7 +243,7 @@ export default function RoomEditor({
       )}
 
       <p className="text-xs text-white/30 mt-3">
-        แนะนำ: PNG โปร่งใสสำหรับ sprite — JPG หรือ PNG สำหรับ background
+        Tip: Transparent PNG for character/item sprites — JPG or PNG for background assets.
       </p>
     </div>
   )

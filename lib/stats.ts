@@ -2,12 +2,14 @@ export type Stats = {
   hunger: number
   happiness: number
   energy: number
+  social: number
 }
 
 export const DECAY_RATES: Record<keyof Stats, number> = {
   hunger: 500,  // test
   happiness: 500,  // test
   energy: 500,  // test
+  social: 300,
   // hunger:    10,
   // happiness:  5,
   // energy:     4,
@@ -20,12 +22,19 @@ export const ACTION_EFFECTS: Record<string, Partial<Stats>> = {
   sleep: { energy: +40 },
 }
 
+export const SOCIAL_EFFECTS = {
+  stranger: +5,
+  friend: +15,
+  rival: +3,
+}
+
 export function calcCurrentStats(saved: Stats, lastUpdated: string): Stats {
   const hours = (Date.now() - new Date(lastUpdated).getTime()) / 3_600_000
   return {
     hunger: clamp(saved.hunger - DECAY_RATES.hunger * hours),
     happiness: clamp(saved.happiness - DECAY_RATES.happiness * hours),
     energy: clamp(saved.energy - DECAY_RATES.energy * hours),
+    social:    clamp((saved.social ?? 80) - DECAY_RATES.social * hours),
   }
 }
 
@@ -35,6 +44,16 @@ export function applyAction(current: Stats, action: string): Stats {
     hunger: clamp((current.hunger ?? 0) + (effect.hunger ?? 0)),
     happiness: clamp((current.happiness ?? 0) + (effect.happiness ?? 0)),
     energy: clamp((current.energy ?? 0) + (effect.energy ?? 0)),
+    social:    clamp( current.social    ?? 80),
+  }
+}
+
+export function applySocialBoost(current: Stats, tier: string): Stats {
+  const boost = SOCIAL_EFFECTS[tier as keyof typeof SOCIAL_EFFECTS] ?? 5
+  return {
+    ...current,
+    social: clamp((current.social ?? 80) + boost),
+    happiness: clamp((current.happiness ?? 80) + Math.floor(boost / 3)),
   }
 }
 

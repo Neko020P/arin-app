@@ -6,14 +6,15 @@ import type { Stats } from '@/lib/stats'
 import type { RoomZone } from './RoomClient'
 
 const ACTIONS = [
-  { id: 'feed',  label: 'feed', icon: '🍖', cooldown: 30,  zone: 'table' },
-  { id: 'play',  label: 'play', icon: '🎾', cooldown: 60,  zone: 'play'  },
-  { id: 'bath',  label: 'bath',   icon: '🛁', cooldown: 120, zone: 'bath'  },
-  { id: 'sleep', label: 'sleep',   icon: '💤', cooldown: 180, zone: 'bed'   },
+  { id: 'feed', label: 'feed', icon: '🍖', cooldown: 30, zone: 'table' },
+  { id: 'play', label: 'play', icon: '🎾', cooldown: 60, zone: 'play' },
+  { id: 'bath', label: 'bath', icon: '🛁', cooldown: 120, zone: 'bath' },
+  { id: 'sleep', label: 'sleep', icon: '💤', cooldown: 180, zone: 'bed' },
 ]
 
 type Props = {
   characterId: string
+  characterName: string
   liveStats: Stats
   zones: RoomZone[]
   onUpdate: (next: Stats) => void
@@ -22,6 +23,7 @@ type Props = {
 
 export default function ActionPanel({
   characterId,
+  characterName,
   liveStats,
   zones,
   onUpdate,
@@ -29,7 +31,7 @@ export default function ActionPanel({
 }: Props) {
   const supabase = createClient()
   const [lastUsed, setLastUsed] = useState<Record<string, number>>({})
-  const [loading, setLoading]   = useState<string | null>(null)
+  const [loading, setLoading] = useState<string | null>(null)
 
   async function handleAction(actionId: string) {
     setLoading(actionId)
@@ -40,14 +42,15 @@ export default function ActionPanel({
     // รอ character เดินถึง (1.5s estimate) แล้วค่อย update stat
     setTimeout(async () => {
       const next = applyAction(liveStats, actionId)
-      const { hunger, happiness, energy } = next
+      const { hunger, happiness, energy, social } = next
 
       const { error } = await supabase
         .from('character_stats')
         .update({
-          hunger:    Math.round(hunger),
+          hunger: Math.round(hunger),
           happiness: Math.round(happiness),
-          energy:    Math.round(energy),
+          energy: Math.round(energy),
+          social:       Math.round(social),
           last_updated: new Date().toISOString(),
         })
         .eq('character_id', characterId)
@@ -55,6 +58,13 @@ export default function ActionPanel({
       if (!error) {
         onUpdate(next)
         setLastUsed(prev => ({ ...prev, [actionId]: Date.now() }))
+
+        // บันทึก memory
+        fetch('/api/memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ characterId, action: actionId, characterName }),
+        }).catch(() => { })
       }
 
       setLoading(null)
@@ -64,10 +74,10 @@ export default function ActionPanel({
   return (
     <div className="flex gap-2 flex-wrap justify-center">
       {ACTIONS.map(({ id, label, icon, cooldown, zone }) => {
-        const elapsed    = (Date.now() - (lastUsed[id] ?? 0)) / 1000
+        const elapsed = (Date.now() - (lastUsed[id] ?? 0)) / 1000
         const onCooldown = elapsed < cooldown
-        const remaining  = Math.ceil(cooldown - elapsed)
-        const hasZone    = zones.some(z => z.zone_type === zone)
+        const remaining = Math.ceil(cooldown - elapsed)
+        const hasZone = zones.some(z => z.zone_type === zone)
 
         return (
           <button

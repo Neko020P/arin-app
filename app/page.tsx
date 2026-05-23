@@ -1,3 +1,4 @@
+//app/page.tsx
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -33,9 +34,6 @@ export default async function LandingPage() {
                     <span className="text-purple-500">ศิลปินที่จริงจัง</span>
                 </h1>
 
-                <p className="text-gray-500 text-lg leading-relaxed max-w-xl mx-auto mb-8">
-                    จัดการผลงาน รับ commission และสร้าง lore ให้ตัวละครของคุณ — ทั้งหมดในที่เดียว
-                </p>
 
                 <div className="flex items-center justify-center gap-3">
                     <Link
@@ -58,11 +56,6 @@ export default async function LandingPage() {
                     </Link> */}
                 </div>
 
-                {artistCount && artistCount > 0 && (
-                    <p className="text-xs text-gray-400 mt-6">
-                        มีศิลปิน {artistCount.toLocaleString()} คนแล้วบน ARIN
-                    </p>
-                )}
             </section>
 
             {/* Gallery */}
@@ -113,45 +106,6 @@ export default async function LandingPage() {
                     <p className="text-xs text-gray-400 uppercase tracking-widest text-center mb-10">
                         ทำไมถึงเลือก ARIN
                     </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <FeatureCard
-                            emoji="🖼️"
-                            color="bg-purple-50"
-                            title="Portfolio สวยงาม"
-                            description="เลือก layout และ theme ได้เอง ไม่ติดแม่แบบเหมือนแพลตฟอร์มอื่น แสดงผลงานในแบบที่คุณต้องการ"
-                        />
-                        <FeatureCard
-                            emoji="📋"
-                            color="bg-teal-50"
-                            title="จัดการ Commission"
-                            description="ติดตาม queue, ราคา และ income ในที่เดียว มี invoice และสรุปรายได้ให้อัตโนมัติ"
-                        />
-                        <FeatureCard
-                            emoji="📖"
-                            color="bg-orange-50"
-                            title="Character Lore"
-                            description="สร้าง bible ให้ตัวละครฝังอยู่ใน portfolio เชื่อม character กับ artwork ได้โดยตรง"
-                        />
-                        <FeatureCard
-                            emoji="💰"
-                            color="bg-green-50"
-                            title="ติดตามรายได้"
-                            description="สรุปรายได้จาก commission พร้อม export ข้อมูลสำหรับการคำนวณภาษีได้เลย"
-                        />
-                        <FeatureCard
-                            emoji="🔒"
-                            color="bg-blue-50"
-                            title="ควบคุม Privacy"
-                            description="เลือกได้ว่า artwork หรือ character ไหนจะ public หรือ private มี NSFW filter ในตัว"
-                        />
-                        <FeatureCard
-                            emoji="⚡"
-                            color="bg-pink-50"
-                            title="เร็วและใช้งานง่าย"
-                            description="ออกแบบมาให้ศิลปินใช้ได้ทันที ไม่มีขั้นตอนซับซ้อน upload แล้วเผยแพร่ได้เลย"
-                        />
-                    </div>
                 </div>
             </section>
 

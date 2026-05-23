@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { runVisitScheduler } from '@/lib/visitScheduler'
 import { NextRequest, NextResponse } from 'next/server'
+import { createMemory } from '@/lib/memory'
 
 export async function POST(req: NextRequest) {
   const { characterId } = await req.json()
