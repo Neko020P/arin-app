@@ -1,3 +1,4 @@
+//page.tsx 
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -62,6 +63,7 @@ export default async function CharacterRoomPage({
 
       <RoomClient
         characterId={id}
+        characterName={character.name}
         spriteUrl={spriteUrl}
         bgUrl={character.room_bg_url ?? null}
         initialStats={stats}

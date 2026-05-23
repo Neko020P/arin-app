@@ -25,6 +25,8 @@ export default function RoomEditor({
   const [uploadingBg, setUploadingBg] = useState(false)
   const [uploadingSprite, setUploadingSprite] = useState(false)
   const [error, setError] = useState('')
+  const [showBgTooltip, setShowBgTooltip] = useState(false)
+  const [showSpriteTooltip, setShowSpriteTooltip] = useState(false)
 
   async function uploadFile(
     file: File,
@@ -143,7 +145,9 @@ export default function RoomEditor({
         />
 
         {/* BG Button + Tooltip */}
-        <div className="relative group">
+        <div className="relative"
+          onMouseEnter={() => setShowBgTooltip(true)}
+          onMouseLeave={() => setShowBgTooltip(false)}>
           <button
             onClick={() => bgRef.current?.click()}
             disabled={uploadingBg}

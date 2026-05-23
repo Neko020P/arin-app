@@ -14,6 +14,7 @@ import PersonalitySelector from './PersonalitySelector'
 import IsoVisitor, { type VisitorData } from './IsoVisitor'
 import RelationshipPanel from './RelationshipPanel'
 import { useRef } from 'react'
+import TransferOwnershipPanel from './TransferOwnershipPanel'
 
 export type RoomZone = {
   id: string
@@ -29,6 +30,7 @@ export type RoomZone = {
 
 type Props = {
   characterId: string
+  characterName: string
   spriteUrl: string | null
   bgUrl: string | null
   initialStats: Stats & { last_updated: string }
@@ -44,6 +46,7 @@ type Props = {
 
 export default function RoomClient({
   characterId,
+  characterName,
   spriteUrl,
   bgUrl,
   initialStats,
@@ -216,6 +219,10 @@ export default function RoomClient({
             characterId={characterId}
             currentBgUrl={currentBgUrl}
             currentSpriteUrl={currentSpriteUrl}
+          />
+          <TransferOwnershipPanel
+            characterId={characterId}
+            characterName={characterName}
           />
         </div>
 
