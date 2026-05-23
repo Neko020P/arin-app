@@ -28,7 +28,9 @@ type Props = {
   containerRef: React.RefObject<HTMLDivElement | null>
   onArrive: (action: string) => void
   onActionComplete: () => void
-  onPosChange: (pos: GridPos) => void  // บอก parent ว่าอยู่ที่ไหน (สำหรับ bubble)
+  onPosChange: (pos: GridPos) => void
+  // mode: 'wander' | 'walking' | 'acting'
+  // actingAction: string | null
 }
 
 function getNextStep(current: GridPos, target: GridPos): GridPos {
@@ -67,11 +69,14 @@ export default function IsoCharacter({
   spriteUrl, moodSpriteUrl, stats, personality,
   gridCols, gridRows, tileW, tileH, originX, originY,
   pendingAction, zones, onArrive, onActionComplete, onPosChange,
-  containerRef, 
+  containerRef,
 }: Props) {
   const [pos, setPos] = useState<GridPos>({ col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) })
   const [facing, setFacing] = useState<'left' | 'right'>('right')
   const [spriteLoaded, setSpriteLoaded] = useState(false)
+
+  const [currentMode, setCurrentMode] = useState<'idle' | 'walking' | 'acting'>('idle')
+  const [currentAction, setCurrentAction] = useState<string | null>(null)
 
   const posRef = useRef<GridPos>({ col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) })
   const modeRef = useRef<CharacterMode>({ type: 'wander' })
@@ -81,7 +86,6 @@ export default function IsoCharacter({
   const mood = getMood(stats)
   const config = PERSONALITY_CONFIG[personality] ?? PERSONALITY_CONFIG['friendly']
 
-  // รับ pendingAction → เดินไป zone
   useEffect(() => {
     if (!pendingAction) return
 
@@ -118,7 +122,11 @@ export default function IsoCharacter({
     const interval = setInterval(() => {
       const mode = modeRef.current
 
-      if (mode.type === 'acting') return
+      if (mode.type === 'acting') {
+        setCurrentMode('acting')
+        setCurrentAction(mode.action)
+        return
+      }
 
       if (mode.type === 'walking_to') {
         const target = mode.path[0]
@@ -130,6 +138,7 @@ export default function IsoCharacter({
           return
         }
 
+        setCurrentMode('walking')
         const next = getNextStep(current, target)
         setFacing(next.col > current.col ? 'right' : next.col < current.col ? 'left' : facing)
         posRef.current = next
@@ -146,6 +155,8 @@ export default function IsoCharacter({
       const target = targetRef.current
 
       if (current.col === target.col && current.row === target.row) {
+        setCurrentMode('idle')
+        setCurrentAction(null)
         waitRef.current = true
         const wait = (MIN_WAIT + Math.random() * (MAX_WAIT - MIN_WAIT)) * config.waitMultiplier
         setTimeout(() => {
@@ -164,6 +175,7 @@ export default function IsoCharacter({
       const next = getNextStep(current, target)
       if (next.col > current.col) setFacing('right')
       else if (next.col < current.col) setFacing('left')
+      setCurrentMode('walking')
       posRef.current = next
       setPos(next)
       onPosChange(next)
@@ -185,6 +197,21 @@ export default function IsoCharacter({
   const breatheSpeed = mood === 'happy' ? '2.5s' : mood === 'sad' ? '5s' : '3.5s'
   const isSitting = stats.energy < 15
 
+  function getAnimation(): string {
+    if (!spriteLoaded) return 'none'
+    if (currentMode === 'walking') return `walk ${0.6 / config.speedMultiplier}s ease-in-out infinite`
+    if (currentMode === 'acting') {
+      if (currentAction === 'feed') return 'act_feed 0.5s ease-in-out infinite'
+      if (currentAction === 'play') return 'act_play 0.4s ease-in-out infinite'
+      if (currentAction === 'bath') return 'act_bath 0.4s ease-in-out infinite'
+      if (currentAction === 'sleep') return 'act_sleep 3s ease-in-out infinite'
+    }
+    if (mood === 'happy') return 'happy_bounce 1.5s ease-in-out infinite'
+    if (mood === 'sad') return 'sad_droop 3s ease-in-out infinite'
+    if (stats.energy < 30) return 'breathe 5s ease-in-out infinite'
+    return `breathe ${breatheSpeed} ease-in-out infinite`
+  }
+
   return (
     <div
       style={{
@@ -195,6 +222,7 @@ export default function IsoCharacter({
         height: tileH * 3,
         zIndex: pos.col + pos.row + 10,
         pointerEvents: 'none',
+        transition: `left 300ms linear, top 300ms linear`,
       }}
     >
       <div style={{
@@ -216,7 +244,7 @@ export default function IsoCharacter({
             width: 'auto',
             objectFit: 'contain',
             imageRendering: 'pixelated',
-            animation: spriteLoaded ? `breathe ${breatheSpeed} ease-in-out infinite` : 'none',
+            animation: getAnimation(),
             transformOrigin: 'bottom center',
             filter: getFilter(mood, stats.energy),
           }}
@@ -234,7 +262,7 @@ export default function IsoCharacter({
               width: 'auto',
               objectFit: 'contain',
               imageRendering: 'pixelated',
-              animation: spriteLoaded ? `breathe ${breatheSpeed} ease-in-out infinite` : 'none',
+              animation: spriteLoaded ? getAnimation() : 'none',
             }}
           />
         )}

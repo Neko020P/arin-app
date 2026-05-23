@@ -204,7 +204,7 @@ export default function IsoFurniture({
                                 borderRadius: 4,
                                 whiteSpace: 'nowrap',
                             }}>
-                                ✥ ลาก
+                                ✥ Drag to move {zone.zone_type}
                             </div>
                         )}
                     </div>

@@ -6,10 +6,10 @@ import type { Stats } from '@/lib/stats'
 import type { RoomZone } from './RoomClient'
 
 const ACTIONS = [
-  { id: 'feed',  label: 'ให้อาหาร', icon: '🍖', cooldown: 30,  zone: 'table' },
-  { id: 'play',  label: 'เล่นด้วย', icon: '🎾', cooldown: 60,  zone: 'play'  },
-  { id: 'bath',  label: 'อาบน้ำ',   icon: '🛁', cooldown: 120, zone: 'bath'  },
-  { id: 'sleep', label: 'ให้นอน',   icon: '💤', cooldown: 180, zone: 'bed'   },
+  { id: 'feed',  label: 'feed', icon: '🍖', cooldown: 30,  zone: 'table' },
+  { id: 'play',  label: 'play', icon: '🎾', cooldown: 60,  zone: 'play'  },
+  { id: 'bath',  label: 'bath',   icon: '🛁', cooldown: 120, zone: 'bath'  },
+  { id: 'sleep', label: 'sleep',   icon: '💤', cooldown: 180, zone: 'bed'   },
 ]
 
 type Props = {
@@ -78,11 +78,11 @@ export default function ActionPanel({
                        border border-white/20 text-white/70 text-sm
                        hover:bg-white/10 transition-colors
                        disabled:opacity-40 disabled:cursor-not-allowed"
-            title={!hasZone ? `ยังไม่มีโซน ${zone} ในห้อง` : undefined}
+            title={!hasZone ? `No ${zone} zone in the room` : undefined}
           >
             <span className="text-xl">{icon}</span>
             <span className="text-xs">{label}</span>
-            {!hasZone && <span className="text-[10px] text-white/30">ไม่มีโซน</span>}
+            {!hasZone && <span className="text-[10px] text-white/30">Non zone</span>}
             {onCooldown && <span className="text-[10px] text-white/30">{remaining}s</span>}
           </button>
         )

@@ -1,3 +1,4 @@
+//RoomEditor.tsx
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
@@ -18,12 +19,14 @@ export default function RoomEditor({
   const router = useRouter()
   const supabase = createClient()
 
-  const bgRef     = useRef<HTMLInputElement>(null)
+  const bgRef = useRef<HTMLInputElement>(null)
   const spriteRef = useRef<HTMLInputElement>(null)
 
-  const [uploadingBg,     setUploadingBg]     = useState(false)
+  const [uploadingBg, setUploadingBg] = useState(false)
   const [uploadingSprite, setUploadingSprite] = useState(false)
-  const [error,           setError]           = useState('')
+  const [error, setError] = useState('')
+  const [showBgTooltip, setShowBgTooltip] = useState(false)
+  const [showSpriteTooltip, setShowSpriteTooltip] = useState(false)
 
   async function uploadFile(
     file: File,
@@ -42,7 +45,7 @@ export default function RoomEditor({
     setLoading(true)
     setError('')
 
-    const ext      = file.name.split('.').pop()
+    const ext = file.name.split('.').pop()
     const fileName = `rooms/${characterId}/${field}-${Date.now()}.${ext}`
 
     const { data: storageData, error: storageErr } = await supabase.storage
@@ -69,6 +72,61 @@ export default function RoomEditor({
 
     setLoading(false)
   }
+  function downloadTemplate() {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1920
+    canvas.height = 1080
+    const ctx = canvas.getContext('2d')!
+
+    // background
+    ctx.fillStyle = '#1a1a2e'
+    ctx.fillRect(0, 0, 1920, 1080)
+
+    // วาด isometric grid
+    const COLS = 10
+    const ROWS = 10
+    const TW = 192  // tileW scaled to 1920
+    const TH = 96   // tileH scaled
+    const originX = 960
+    const originY = 200
+
+    ctx.strokeStyle = 'rgba(120,180,255,0.3)'
+    ctx.lineWidth = 1.5
+
+    for (let c = 0; c <= COLS; c++) {
+      for (let r = 0; r <= ROWS; r++) {
+        const x = originX + (c - r) * (TW / 2)
+        const y = originY + (c + r) * (TH / 2)
+        if (c < COLS && r < ROWS) {
+          // วาด tile
+          ctx.beginPath()
+          ctx.moveTo(x, y)
+          ctx.lineTo(x + TW / 2, y + TH / 2)
+          ctx.lineTo(x, y + TH)
+          ctx.lineTo(x - TW / 2, y + TH / 2)
+          ctx.closePath()
+          ctx.fillStyle = 'rgba(30,40,80,0.5)'
+          ctx.fill()
+          ctx.stroke()
+        }
+      }
+    }
+
+    // label
+    ctx.fillStyle = 'rgba(255,255,255,0.4)'
+    ctx.font = '28px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('ARIN Room Background Template — 1920×1080px', 960, 60)
+    ctx.font = '20px sans-serif'
+    ctx.fillStyle = 'rgba(120,180,255,0.6)'
+    ctx.fillText('วาด background ให้พอดีกับ grid นี้ แล้ว upload ได้เลย', 960, 95)
+
+    // download
+    const a = document.createElement('a')
+    a.download = 'arin-room-template.png'
+    a.href = canvas.toDataURL('image/png')
+    a.click()
+  }
 
   return (
     <div className="max-w-xl mx-auto">
@@ -85,18 +143,50 @@ export default function RoomEditor({
             if (f) uploadFile(f, 'room_bg_url', setUploadingBg)
           }}
         />
-        <button
-          onClick={() => bgRef.current?.click()}
-          disabled={uploadingBg}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 text-sm transition-colors disabled:opacity-50"
-        >
-          {uploadingBg ? (
-            <span className="animate-spin">⏳</span>
-          ) : (
-            <span>🏠</span>
-          )}
-          {currentBgUrl ? 'เปลี่ยน Background' : 'Upload Background'}
-        </button>
+
+        {/* BG Button + Tooltip */}
+        <div className="relative"
+          onMouseEnter={() => setShowBgTooltip(true)}
+          onMouseLeave={() => setShowBgTooltip(false)}>
+          <button
+            onClick={() => bgRef.current?.click()}
+            disabled={uploadingBg}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 text-sm transition-colors disabled:opacity-50"
+          >
+            {uploadingBg ? <span className="animate-spin">⏳</span> : <span>🏠</span>}
+            {currentBgUrl ? 'เปลี่ยน Background' : 'Upload Background'}
+          </button>
+
+          {/* Tooltip */}
+          <div style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 8px)',
+            left: 0,
+            width: 260,
+            background: 'rgba(15,20,40,0.97)',
+            border: '1px solid rgba(120,180,255,0.2)',
+            borderRadius: 10,
+            padding: '12px 14px',
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.75)',
+            lineHeight: 1.6,
+            zIndex: 100,
+            pointerEvents: 'none',
+            opacity: 0,
+            transition: 'opacity 0.15s',
+          }}
+            className="group-hover:opacity-100"
+          >
+            <div style={{ fontWeight: 600, color: 'white', marginBottom: 6 }}>📐 แนะนำสำหรับ Background</div>
+            <div>• ขนาด: <b>1920×1080px</b> (16:9)</div>
+            <div>• ฟอร์แมต: JPG หรือ PNG</div>
+            <div>• ภาพควรเป็นมุมมอง <b>isometric</b> (เอียง 30°)</div>
+            <div>• พื้นห้องอยู่กลางภาพ เว้นขอบไว้เป็น wall</div>
+            <div style={{ marginTop: 8, color: 'rgba(120,180,255,0.8)' }}>
+              💡 ดาวน์โหลด template ด้านล่างเพื่อใช้เป็นแนวทาง
+            </div>
+          </div>
+        </div>
 
         {/* Upload sprite */}
         <input
@@ -137,6 +227,14 @@ export default function RoomEditor({
             ลบ Background
           </button>
         )}
+
+        {/* Download template */}
+        <button
+          onClick={downloadTemplate}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 text-white/50 hover:bg-white/10 text-sm transition-colors"
+        >
+          📥 ดาวน์โหลด Template
+        </button>
 
       </div>
 
