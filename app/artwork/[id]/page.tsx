@@ -1,3 +1,4 @@
+//app/artwork/[id]/page.tsx
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -170,9 +171,9 @@ export default async function ArtworkDetailPage({
                                     Tags
                                 </h2>
                                 <div className="flex flex-wrap gap-2">
-                                    {artwork.tags.map((tag: string) => (
+                                    {artwork.tags.map((tag: string, i: number) => (
                                         <span
-                                            key={tag}
+                                            key={i}
                                             className="text-xs bg-purple-50 text-purple-600 px-3 py-1 rounded-full border border-purple-100"
                                         >
                                             #{tag}

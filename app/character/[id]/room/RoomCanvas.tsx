@@ -217,7 +217,7 @@ export default function RoomCanvas({
             backdropFilter: 'blur(4px)',
           }}
         >
-          {editMode ? '✅ บันทึก' : '✏️ จัดห้อง'}
+          {editMode ? '✅ Save' : '✏️ Edit room'}
         </button>
       )}
 

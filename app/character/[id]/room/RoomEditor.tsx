@@ -82,33 +82,42 @@ export default function RoomEditor({
     ctx.fillStyle = '#1a1a2e'
     ctx.fillRect(0, 0, 1920, 1080)
 
-    // วาด isometric grid
-    const COLS = 10
-    const ROWS = 10
-    const TW = 192  // tileW scaled to 1920
-    const TH = 96   // tileH scaled
-    const originX = 960
-    const originY = 200
+    const GRID_COLS = 10
+    const GRID_ROWS = 10
 
+    // คำนวณ scale จาก canvas จริง (tileW=100, tileH=50) → 1920x1080
+    // canvasW = (10+10) * (100/2) + 100 = 1100
+    // canvasH = svgH + tileH = (10+10)*(50/2) + 50 = 550
+    const canvasW = (GRID_COLS + GRID_ROWS) * 50 + 100  // 1100
+    const canvasH = (GRID_COLS + GRID_ROWS) * 25 + 50   // 550
+
+    const scaleX = 1920 / canvasW
+    const scaleY = 1080 / canvasH
+
+    const originX = (canvasW / 2) * scaleX   // = 960
+    const originY = 50 * scaleY              // = tileH * scaleY
+
+    const TW = 100 * scaleX  // tileW scaled
+    const TH = 50 * scaleY   // tileH scaled
+
+    // วาด grid
     ctx.strokeStyle = 'rgba(120,180,255,0.3)'
     ctx.lineWidth = 1.5
 
-    for (let c = 0; c <= COLS; c++) {
-      for (let r = 0; r <= ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      for (let r = 0; r < GRID_ROWS; r++) {
         const x = originX + (c - r) * (TW / 2)
         const y = originY + (c + r) * (TH / 2)
-        if (c < COLS && r < ROWS) {
-          // วาด tile
-          ctx.beginPath()
-          ctx.moveTo(x, y)
-          ctx.lineTo(x + TW / 2, y + TH / 2)
-          ctx.lineTo(x, y + TH)
-          ctx.lineTo(x - TW / 2, y + TH / 2)
-          ctx.closePath()
-          ctx.fillStyle = 'rgba(30,40,80,0.5)'
-          ctx.fill()
-          ctx.stroke()
-        }
+
+        ctx.beginPath()
+        ctx.moveTo(x, y)
+        ctx.lineTo(x + TW / 2, y + TH / 2)
+        ctx.lineTo(x, y + TH)
+        ctx.lineTo(x - TW / 2, y + TH / 2)
+        ctx.closePath()
+        ctx.fillStyle = 'rgba(30,40,80,0.5)'
+        ctx.fill()
+        ctx.stroke()
       }
     }
 
@@ -116,12 +125,11 @@ export default function RoomEditor({
     ctx.fillStyle = 'rgba(255,255,255,0.4)'
     ctx.font = '28px sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText('ARIN Room Background Template — 1920×1080px', 960, 60)
-    ctx.font = '20px sans-serif'
+    ctx.fillText('ARIN Room Background Template — 1920×1080px', 960, 40)
+    ctx.font = '18px sans-serif'
     ctx.fillStyle = 'rgba(120,180,255,0.6)'
-    ctx.fillText('วาด background ให้พอดีกับ grid นี้ แล้ว upload ได้เลย', 960, 95)
+    ctx.fillText('Draw your background to fit this grid, then upload', 960, 70)
 
-    // download
     const a = document.createElement('a')
     a.download = 'arin-room-template.png'
     a.href = canvas.toDataURL('image/png')
@@ -154,7 +162,7 @@ export default function RoomEditor({
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 text-sm transition-colors disabled:opacity-50"
           >
             {uploadingBg ? <span className="animate-spin">⏳</span> : <span>🏠</span>}
-            {currentBgUrl ? 'เปลี่ยน Background' : 'Upload Background'}
+            {currentBgUrl ? 'Edit Background' : 'Upload Background'}
           </button>
 
           {/* Tooltip */}
@@ -209,7 +217,7 @@ export default function RoomEditor({
           ) : (
             <span>🎨</span>
           )}
-          {currentSpriteUrl ? 'เปลี่ยน Sprite' : 'Upload Sprite (PNG)'}
+          {currentSpriteUrl ? 'Edit Sprite' : 'Upload Sprite (PNG)'}
         </button>
 
         {/* Reset bg */}
@@ -224,7 +232,7 @@ export default function RoomEditor({
             }}
             className="px-4 py-2 rounded-xl border border-red-500/30 text-red-400/70 hover:bg-red-500/10 text-sm transition-colors"
           >
-            ลบ Background
+            Remove Background
           </button>
         )}
 
@@ -233,7 +241,7 @@ export default function RoomEditor({
           onClick={downloadTemplate}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 text-white/50 hover:bg-white/10 text-sm transition-colors"
         >
-          📥 ดาวน์โหลด Template
+          📥 Download Template
         </button>
 
       </div>

@@ -67,7 +67,7 @@ export default function TransferOwnershipPanel({ characterId, characterName }: P
             cursor: 'pointer',
           }}
         >
-          🔄 โอน Character ให้คนอื่น
+          🔄 Transfer Character
         </button>
       ) : (
         <div style={{

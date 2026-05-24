@@ -13,7 +13,7 @@ export type PersonalityConfig = {
 
 export const PERSONALITY_CONFIG: Record<Personality, PersonalityConfig> = {
   shy: {
-    label: 'ขี้อาย',
+    label: 'shy',
     emoji: '🌸',
     speedMultiplier:       0.5,
     waitMultiplier:        2.0,   // หยุดนานกว่า
@@ -23,7 +23,7 @@ export const PERSONALITY_CONFIG: Record<Personality, PersonalityConfig> = {
     directionChangeChance: 0.0,
   },
   friendly: {
-    label: 'อัธยาศัยดี',
+    label: 'friendly',
     emoji: '😊',
     speedMultiplier:       1.0,
     waitMultiplier:        1.0,
@@ -33,7 +33,7 @@ export const PERSONALITY_CONFIG: Record<Personality, PersonalityConfig> = {
     directionChangeChance: 0.0,
   },
   observant: {
-    label: 'ช่างสังเกต',
+    label: 'observant',
     emoji: '🔍',
     speedMultiplier:       0.7,
     waitMultiplier:        1.5,   // หยุดมองนานๆ
@@ -43,7 +43,7 @@ export const PERSONALITY_CONFIG: Record<Personality, PersonalityConfig> = {
     directionChangeChance: 0.3,   // หันดูรอบๆ บ่อย
   },
   playful: {
-    label: 'ซน',
+    label: 'playful',
     emoji: '🎮',
     speedMultiplier:       1.8,   // เดินเร็ว
     waitMultiplier:        0.4,   // หยุดสั้น
@@ -53,7 +53,7 @@ export const PERSONALITY_CONFIG: Record<Personality, PersonalityConfig> = {
     directionChangeChance: 0.15,  // เปลี่ยนทิศบ่อย
   },
   calm: {
-    label: 'ใจเย็น',
+    label: 'calm',
     emoji: '🍃',
     speedMultiplier:       0.6,
     waitMultiplier:        2.5,   // หยุดนานมาก

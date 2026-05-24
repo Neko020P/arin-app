@@ -1,204 +1,99 @@
-//app/page.tsx
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import Image from 'next/image'
 
 export default async function LandingPage() {
-    const supabase = await createClient()
+  const supabase = await createClient()
 
-    // ดึง artwork ล่าสุดจากทุก artist มาแสดงใน gallery
-    const { data: artworks } = await supabase
-        .from('artworks')
-        .select('id, title, image_url, profiles(username, display_name)')
-        .eq('status', 'published')
-        .eq('is_nsfw', false)
-        .order('created_at', { ascending: false })
-        .limit(8)
+  const { data: artworks } = await supabase
+    .from('artworks')
+    .select('id, title, image_url, profiles(username, display_name, avatar_url)')
+    .eq('status', 'published')
+    .eq('is_nsfw', false)
+    .order('created_at', { ascending: false })
+    .limit(20)
 
-    // ดึงจำนวน artist ทั้งหมด
-    const { count: artistCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
+  const { data: { user } } = await supabase.auth.getUser()
 
-    return (
-        <main className="min-h-screen">
+  return (
+    <main className="min-h-screen bg-white dark:bg-gray-950">
 
-            {/* Hero */}
-            <section className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
-                <span className="inline-block text-xs px-3 py-1.5 rounded-full bg-purple-50 text-purple-600 mb-5">
-                    Portfolio · Commission · Character Lore
-                </span>
+      {/* Hero — compact */}
+      <section className="max-w-2xl mx-auto px-4 pt-16 pb-10 text-center">
+        <h1 className="text-4xl font-semibold tracking-tight mb-4 dark:text-white">
+          Your Character<br />
+          <span className="text-purple-500">Your World</span>
+        </h1>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
+          Portfolio · Commission · Character Lore — all in one place.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          {!user && (
+            <Link href="/signup"
+              className="bg-purple-600 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-purple-700 transition-colors">
+              Start for Free
+            </Link>
+          )}
+          <Link href="/commissions"
+            className="border dark:border-white/20 px-5 py-2.5 rounded-full text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+            View Commissions
+          </Link>
+        </div>
+      </section>
 
-                <h1 className="text-5xl font-medium leading-tight tracking-tight mb-5">
-                    แพลตฟอร์มสำหรับ<br />
-                    <span className="text-purple-500">ศิลปินที่จริงจัง</span>
-                </h1>
+      {/* Masonry Gallery */}
+      {artworks && artworks.length > 0 && (
+        <section className="px-4 pb-20 max-w-7xl mx-auto">
+          <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-3 gap-4 space-y-4">
+            {artworks.map(artwork => {
+              const artist = artwork.profiles as unknown as {
+                username: string
+                display_name: string | null
+                avatar_url: string | null
+              } | null
 
-
-                <div className="flex items-center justify-center gap-3">
-                    <Link
-                        href="/signup"
-                        className="bg-purple-600 text-white px-6 py-3 rounded-full text-sm font-medium hover:bg-purple-700 transition-colors"
-                    >
-                        เริ่มต้นฟรี
-                    </Link>
-                    <Link
-                        href="/commissions"
-                        className="border px-6 py-3 rounded-full text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-                    >
-                        ดู Commission
-                    </Link>
-                    {/* <Link
-                        href="#features"
-                        className="border px-6 py-3 rounded-full text-sm text-gray-500 hover:bg-gray-50 transition-colors"
-                    >
-                        ดูฟีเจอร์
-                    </Link> */}
-                </div>
-
-            </section>
-
-            {/* Gallery */}
-            {artworks && artworks.length > 0 && (
-                <section className="px-4 pb-16 max-w-5xl mx-auto">
-                    <p className="text-xs text-gray-400 uppercase tracking-widest text-center mb-6">
-                        ผลงานจากศิลปินใน ARIN
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {artworks.map(artwork => {
-                            const artist = artwork.profiles as unknown as {
-                                username: string
-                                display_name: string
-                            } | null
-                            return (
-                                <Link
-                                    key={artwork.id}
-                                    href={`/artwork/${artwork.id}`}
-                                    className="group relative aspect-square rounded-2xl overflow-hidden bg-gray-100"
-                                >
-                                    <Image
-                                        src={artwork.image_url}
-                                        alt={artwork.title}
-                                        fill
-                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                        sizes="(max-width: 768px) 50vw, 25vw"
-                                    />
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end p-3 opacity-0 group-hover:opacity-100">
-                                        <div>
-                                            <p className="text-white text-xs font-medium truncate">
-                                                {artwork.title}
-                                            </p>
-                                            <p className="text-white/60 text-xs">
-                                                @{artist?.username ?? ''}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            )
-                        })}
-                    </div>
-                </section>
-            )}
-
-            {/* Features */}
-            <section id="features" className="bg-gray-50 py-16 px-4">
-                <div className="max-w-4xl mx-auto">
-                    <p className="text-xs text-gray-400 uppercase tracking-widest text-center mb-10">
-                        ทำไมถึงเลือก ARIN
-                    </p>
-                </div>
-            </section>
-
-            {/* Differentiators */}
-            <section className="py-16 px-4">
-                <div className="max-w-4xl mx-auto">
-                    <p className="text-xs text-gray-400 uppercase tracking-widest text-center mb-10">
-                        เหนือกว่าแพลตฟอร์มอื่น
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <DiffCard
-                            versus="เทียบกับ Vgen"
-                            title="มี Lore & Character system ในตัว"
-                            description="ไม่ต้องใช้ Toyhouse แยกต่างหาก จัดการ character ได้ในที่เดียวกับ portfolio"
-                        />
-                        <DiffCard
-                            versus="เทียบกับ Toyhouse"
-                            title="Portfolio + Commission ในที่เดียว"
-                            description="ไม่ต้องสลับแพลตฟอร์ม รับ commission และแสดงผลงานได้พร้อมกันเลย"
-                        />
-                        <DiffCard
-                            versus="เทียบกับ DeviantArt"
-                            title="ติดตาม Income ได้เลย"
-                            description="มีระบบสรุปรายได้จาก commission ที่ DA ไม่มี เหมาะสำหรับศิลปินอาชีพ"
-                        />
-                    </div>
-                </div>
-            </section>
-
-            {/* CTA */}
-            <section className="bg-purple-600 py-20 px-4 text-center">
-                <h2 className="text-3xl font-medium text-white mb-3">
-                    พร้อมเริ่มต้นแล้วหรือยัง?
-                </h2>
-                <p className="text-purple-200 mb-8">
-                    สมัครฟรี ไม่มีค่าใช้จ่าย ไม่ต้องใส่บัตรเครดิต
-                </p>
+              return (
                 <Link
-                    href="/signup"
-                    className="bg-white text-purple-600 px-8 py-3 rounded-full text-sm font-medium hover:bg-purple-50 transition-colors inline-block"
+                  key={artwork.id}
+                  href={`/artwork/${artwork.id}`}
+                  className="group block break-inside-avoid rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-900 relative"
                 >
-                    สร้างบัญชีฟรี
+                  <img
+                    src={artwork.image_url}
+                    alt={artwork.title}
+                    className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
+                    <p className="text-white text-xs font-semibold truncate">{artwork.title}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {artist?.avatar_url && (
+                        <img src={artist.avatar_url}
+                          className="w-4 h-4 rounded-full object-cover" />
+                      )}
+                      <p className="text-white/70 text-xs">@{artist?.username ?? ''}</p>
+                    </div>
+                  </div>
                 </Link>
-            </section>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
-            {/* Footer */}
-            <footer className="border-t py-8 px-4 text-center">
-                <p className="text-sm text-gray-400">
-                    © 2025 ARIN · สร้างด้วย ❤️ สำหรับศิลปิน
-                </p>
-            </footer>
+      {/* CTA */}
+      {!user && (
+        <section className="bg-purple-600 py-16 px-4 text-center">
+          <h2 className="text-2xl font-semibold text-white mb-2">Ready to jump in?</h2>
+          <p className="text-purple-200 text-sm mb-6">Join free and start building your character's world.</p>
+          <Link href="/signup"
+            className="bg-white text-purple-600 px-7 py-2.5 rounded-full text-sm font-medium hover:bg-purple-50 transition-colors inline-block">
+            Sign Up for Free
+          </Link>
+        </section>
+      )}
 
-        </main>
-    )
-}
-
-function FeatureCard({
-    emoji,
-    color,
-    title,
-    description,
-}: {
-    emoji: string
-    color: string
-    title: string
-    description: string
-}) {
-    return (
-        <div className="bg-white rounded-2xl p-6 border border-gray-100">
-            <div className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center text-xl mb-4`}>
-                {emoji}
-            </div>
-            <h3 className="font-medium mb-2">{title}</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
-        </div>
-    )
-}
-
-function DiffCard({
-    versus,
-    title,
-    description,
-}: {
-    versus: string
-    title: string
-    description: string
-}) {
-    return (
-        <div className="border rounded-2xl p-5">
-            <p className="text-xs text-gray-400 mb-2">{versus}</p>
-            <h3 className="font-medium text-sm mb-2">{title}</h3>
-            <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
-        </div>
-    )
+    </main>
+  )
 }

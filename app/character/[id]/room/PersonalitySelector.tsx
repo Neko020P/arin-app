@@ -25,7 +25,7 @@ export default function PersonalitySelector({ characterId, current, onUpdate }: 
 
   return (
     <div className="w-full max-w-sm">
-      <p className="text-xs text-white/40 mb-2 text-center">บุคลิกตัวละคร</p>
+      <p className="text-xs text-white/40 mb-2 text-center">Personality</p>
       <div className="flex gap-2 flex-wrap justify-center">
         {(Object.entries(PERSONALITY_CONFIG) as [Personality, typeof PERSONALITY_CONFIG[Personality]][]).map(
           ([id, config]) => (
