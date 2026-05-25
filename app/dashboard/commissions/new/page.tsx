@@ -176,7 +176,7 @@ export default function NewCommissionPage() {
 
           {/* Open/Closed */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">สถานะ</label>
+            <label className="text-sm font-medium">Status</label>
             <div className="flex gap-3">
               <button
                 type="button"
@@ -211,14 +211,14 @@ export default function NewCommissionPage() {
               disabled={saving}
               className="flex-1 bg-purple-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
             >
-              {saving ? 'กำลังบันทึก...' : 'สร้าง Listing'}
+              {saving ? 'Saving...' : 'Create Listing'}
             </button>
             <button
               type="button"
               onClick={() => router.back()}
               className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50"
             >
-              ยกเลิก
+              Cancel
             </button>
           </div>
 

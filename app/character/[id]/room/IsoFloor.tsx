@@ -63,7 +63,7 @@ export default function IsoFloor({
                 ? 'rgba(255,255,255,0.08)'
                 : 'rgba(255,255,255,0.04)'
           }
-          stroke={isHighlight ? 'rgba(120,180,255,0.6)' : 'rgba(255,255,255,0.12)'}
+          stroke={isHighlight ? 'rgba(120,180,255,0.6)' : 'rgba(255,255,255,0.12)'}//stroke="transparent"
           strokeWidth={isHighlight ? 1.5 : 0.5}
         />
       )

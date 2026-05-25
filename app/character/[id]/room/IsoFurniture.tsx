@@ -1,3 +1,4 @@
+//IsoFurniture.tsx
 'use client'
 import { useState, useRef, useCallback } from 'react'
 import { isoToScreen, screenToGrid } from './IsoFloor'
