@@ -144,17 +144,17 @@ export default function EditProfilePage() {
                 className="flex-1 px-3 py-2 text-sm outline-none"
               />
             </div>
-            <p className="text-xs text-gray-400">ตัวเล็ก, ตัวเลข, _ เท่านั้น</p>
+            <p className="text-xs text-gray-400">Lowercase and numbers only</p>
           </div>
 
           {/* Display Name */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">ชื่อที่แสดง</label>
+            <label className="text-sm font-medium">Display Name</label>
             <input
               type="text"
               value={form.display_name}
               onChange={e => updateField('display_name', e.target.value)}
-              placeholder="ชื่อจริงหรือนามแฝง"
+              placeholder="Full name or alias"
               className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
             />
           </div>
@@ -165,7 +165,7 @@ export default function EditProfilePage() {
             <textarea
               value={form.bio}
               onChange={e => updateField('bio', e.target.value)}
-              placeholder="แนะนำตัวเองสั้นๆ..."
+              placeholder="Brief self-introduction..."
               rows={4}
               maxLength={300}
               className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400 resize-none"
@@ -222,7 +222,7 @@ export default function EditProfilePage() {
                 onClick={addSocialLink}
                 className="text-sm text-purple-600 hover:underline text-left"
               >
-                + เพิ่ม link
+                + Add link
               </button>
             )}
           </div>
@@ -232,7 +232,7 @@ export default function EditProfilePage() {
             <p className="text-sm text-red-500">{error}</p>
           )}
           {success && (
-            <p className="text-sm text-green-500">บันทึกสำเร็จแล้ว กำลังพาไปหน้าโปรไฟล์...</p>
+            <p className="text-sm text-green-500">Save successful. Redirecting to profile page...</p>
           )}
 
           {/* Actions */}
@@ -242,14 +242,14 @@ export default function EditProfilePage() {
               disabled={saving}
               className="flex-1 bg-purple-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
             >
-              {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+              {saving ? 'Saving...' : 'Save'}
             </button>
             <button
               type="button"
               onClick={() => router.back()}
               className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50"
             >
-              ยกเลิก
+              Cancel
             </button>
           </div>
 

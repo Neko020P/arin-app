@@ -203,14 +203,14 @@ export default function EditCharacterPage() {
               disabled={saving}
               className="flex-1 bg-purple-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
             >
-              {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
             <button
               type="button"
               onClick={() => router.back()}
               className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50"
             >
-              ยกเลิก
+              Cancel
             </button>
           </div>
 

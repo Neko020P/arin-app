@@ -185,6 +185,11 @@ export default function IsoCharacter({
     return () => clearInterval(interval)
   }, [personality, gridCols, gridRows])
 
+  const imgRef = useRef<HTMLImageElement>(null)
+  useEffect(() => {
+    if (imgRef.current?.complete) setSpriteLoaded(true)
+  }, [])
+
   // แปลง grid pos → screen pos
   const screen = isoToScreen(pos.col, pos.row, tileW, tileH, originX, originY)
   const rect = containerRef.current?.getBoundingClientRect()
@@ -196,6 +201,7 @@ export default function IsoCharacter({
   const cssY = screen.y * scaleY
   const breatheSpeed = mood === 'happy' ? '2.5s' : mood === 'sad' ? '5s' : '3.5s'
   const isSitting = stats.energy < 15
+
 
   function getAnimation(): string {
     if (!spriteLoaded) return 'none'
@@ -236,6 +242,7 @@ export default function IsoCharacter({
       }}>
         {/* แสดง mood sprite ถ้ามี ไม่งั้นแสดง base sprite */}
         <img
+          ref={imgRef}
           src={moodSpriteUrl ?? spriteUrl}
           alt="character"
           onLoad={() => setSpriteLoaded(true)}

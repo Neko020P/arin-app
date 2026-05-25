@@ -61,16 +61,16 @@ export default function NavbarClient({ profile }: { profile: Profile }) {
             onClick={() => setOpen(false)}
             className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
           >
-            View Profile
+            Profile
           </Link>
 
-          <Link
+          {/* <Link
             href="/profile/edit"
             onClick={() => setOpen(false)}
             className="block px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
           >
             Edit Profile
-          </Link>
+          </Link> */}
 
           <Link
             href="/dashboard/commissions"

@@ -97,7 +97,7 @@ export default function RoomCanvas({
       style={{
         position: 'relative',
         width: '100%',
-        aspectRatio: '16/9',
+        height: '100%', //aspectRatio: '16/9',
         overflow: 'hidden',
         borderRadius: 16,
         background: bgUrl ? undefined : (bgColor ?? 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)'),
@@ -106,8 +106,20 @@ export default function RoomCanvas({
       {/* Background */}
       {bgUrl && (
         <img src={bgUrl} alt="bg"
-          className="absolute inset-0 w-full h-full object-cover" />
+          style={{
+            position: 'absolute',
+            top: '8%',
+            left: '0%',
+            width: '100%',
+            height: '85%',
+            objectFit: 'fill',
+          }}
+        />
       )}
+      {/* {bgUrl && (
+        <img src={bgUrl} alt="bg"
+          className="absolute inset-0 w-full h-full object-cover" />
+      )} */}
 
       {/* Isometric scene */}
       <div style={{
@@ -116,15 +128,17 @@ export default function RoomCanvas({
         overflow: 'hidden',
       }}>
         {/* Floor grid */}
-        <IsoFloor
-          cols={GRID_COLS}
-          rows={GRID_ROWS}
-          tileW={TILE_W}
-          tileH={TILE_H}
-          originX={originX}
-          originY={originY}
-          highlightCell={highlightCell}
-        />
+        {editMode && (
+          <IsoFloor
+            cols={GRID_COLS}
+            rows={GRID_ROWS}
+            tileW={TILE_W}
+            tileH={TILE_H}
+            originX={originX}
+            originY={originY}
+            highlightCell={highlightCell}
+          />
+        )}
 
         {/* Furniture */}
         <IsoFurniture
@@ -280,6 +294,18 @@ export default function RoomCanvas({
     50%  { transform: translateY(2px) scaleX(0.97); }
     100% { transform: translateY(0px) scaleX(1); }
   }
+  @keyframes act_read {
+    0%   { transform: translateY(0px) rotate(0deg); }
+    50%  { transform: translateY(-3px) rotate(-3deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+  }
+  @keyframes act_dance {
+    0%   { transform: translateY(0px) rotate(-5deg) scaleX(1); }
+    25%  { transform: translateY(-8px) rotate(5deg) scaleX(1.05); }
+    50%  { transform: translateY(0px) rotate(-3deg) scaleX(0.95); }
+    75%  { transform: translateY(-6px) rotate(3deg) scaleX(1.05); }
+    100% { transform: translateY(0px) rotate(-5deg) scaleX(1); }
+}
 `}</style>
     </div>
   )

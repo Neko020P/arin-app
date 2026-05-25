@@ -6,13 +6,14 @@ export type Stats = {
 }
 
 export const DECAY_RATES: Record<keyof Stats, number> = {
-  hunger: 500,  // test
-  happiness: 500,  // test
-  energy: 500,  // test
-  social: 300,
-  // hunger:    10,
-  // happiness:  5,
-  // energy:     4,
+  // hunger: 500,  // test
+  // happiness: 500,  // test
+  // energy: 500,  // test
+  // social: 300,
+  hunger:    10,
+  happiness:  5,
+  energy:     4,
+  social:     3,
 }
 
 export const ACTION_EFFECTS: Record<string, Partial<Stats>> = {

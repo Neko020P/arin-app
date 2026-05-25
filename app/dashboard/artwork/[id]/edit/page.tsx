@@ -131,7 +131,7 @@ export default function EditArtworkPage() {
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400 text-sm">กำลังโหลด...</p>
+        <p className="text-gray-400 text-sm">Loading...</p>
       </main>
     )
   }
@@ -279,7 +279,7 @@ export default function EditArtworkPage() {
               disabled={saving}
               className="flex-1 bg-purple-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
             >
-              {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
             <button
               type="button"

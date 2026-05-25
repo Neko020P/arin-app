@@ -109,7 +109,7 @@ export default function RequestActions({
                   disabled={loading}
                   className="flex-1 bg-purple-600 text-white rounded-lg py-2 text-sm hover:bg-purple-700 disabled:opacity-50"
                 >
-                  บันทึก
+                  Save
                 </button>
                 <button
                   onClick={() => setEditingPrice(false)}
