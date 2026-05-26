@@ -56,13 +56,13 @@ export default async function Navbar() {
           ) : (
             <>
               <Link href="/login" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100">
-                เข้าสู่ระบบ
+                login
               </Link>
               <Link
                 href="/signup"
                 className="text-sm bg-purple-600 text-white px-4 py-1.5 rounded-full hover:bg-purple-700 transition-colors"
               >
-                สมัครใช้งาน
+                sign up
               </Link>
             </>
           )}

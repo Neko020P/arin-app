@@ -10,10 +10,10 @@ export const DECAY_RATES: Record<keyof Stats, number> = {
   // happiness: 500,  // test
   // energy: 500,  // test
   // social: 300,
-  hunger:    10,
-  happiness:  5,
-  energy:     4,
-  social:     3,
+  hunger: 10,
+  happiness: 5,
+  energy: 4,
+  social: 3,
 }
 
 export const ACTION_EFFECTS: Record<string, Partial<Stats>> = {
@@ -35,7 +35,7 @@ export function calcCurrentStats(saved: Stats, lastUpdated: string): Stats {
     hunger: clamp(saved.hunger - DECAY_RATES.hunger * hours),
     happiness: clamp(saved.happiness - DECAY_RATES.happiness * hours),
     energy: clamp(saved.energy - DECAY_RATES.energy * hours),
-    social:    clamp((saved.social ?? 80) - DECAY_RATES.social * hours),
+    social: clamp((saved.social ?? 80) - DECAY_RATES.social * hours),
   }
 }
 
@@ -45,7 +45,16 @@ export function applyAction(current: Stats, action: string): Stats {
     hunger: clamp((current.hunger ?? 0) + (effect.hunger ?? 0)),
     happiness: clamp((current.happiness ?? 0) + (effect.happiness ?? 0)),
     energy: clamp((current.energy ?? 0) + (effect.energy ?? 0)),
-    social:    clamp( current.social    ?? 80),
+    social: clamp(current.social ?? 80),
+  }
+}
+
+export function applyCustomAction(current: Stats, effects: Partial<Stats>): Stats {
+  return {
+    hunger: clamp((current.hunger ?? 0) + (effects.hunger ?? 0)),
+    happiness: clamp((current.happiness ?? 0) + (effects.happiness ?? 0)),
+    energy: clamp((current.energy ?? 0) + (effects.energy ?? 0)),
+    social: clamp((current.social ?? 0) + (effects.social ?? 0)),
   }
 }
 

@@ -107,7 +107,7 @@ export default async function RequestDetailPage({
 
           {/* รายละเอียดที่ลูกค้ากรอก */}
           <div className="mb-5">
-            <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">รายละเอียดที่ต้องการ</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Details Requested</p>
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
               {request.description}
             </p>

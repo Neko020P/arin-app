@@ -42,6 +42,7 @@ type Props = {
   visitors: VisitorData[]
   onVisitorLeave: (characterId: string) => void
   bgColor: string
+  customSpeechText?: string | null
 }
 
 export default function RoomCanvas({
@@ -49,6 +50,7 @@ export default function RoomCanvas({
   pendingAction, onActionComplete,
   moodSprites, personality, isOwner, onZonesChange,
   visitors,
+  customSpeechText,
   onVisitorLeave,
   bgColor,
 }: Props) {
@@ -202,6 +204,7 @@ export default function RoomCanvas({
           posY={charScreen.y}
           lastAction={lastAction}
           personality={personality}
+          customText={customSpeechText}
         />
 
         {/* Particles */}

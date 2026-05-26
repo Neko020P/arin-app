@@ -91,6 +91,8 @@ export default function IsoCharacter({
 
     const ACTION_ZONE: Record<string, string> = {
       feed: 'table', sleep: 'bed', bath: 'bath', play: 'play',
+      custom_1: 'custom_1', custom_2: 'custom_2', custom_3: 'custom_3',
+      custom_4: 'custom_4', custom_5: 'custom_5',
     }
 
     const zoneType = ACTION_ZONE[pendingAction.action]
@@ -211,6 +213,8 @@ export default function IsoCharacter({
       if (currentAction === 'play') return 'act_play 0.4s ease-in-out infinite'
       if (currentAction === 'bath') return 'act_bath 0.4s ease-in-out infinite'
       if (currentAction === 'sleep') return 'act_sleep 3s ease-in-out infinite'
+      if (currentAction === 'act_read') return 'act_read 2s ease-in-out infinite' //
+      if (currentAction === 'act_dance') return 'act_dance 0.6s ease-in-out infinite' //
     }
     if (mood === 'happy') return 'happy_bounce 1.5s ease-in-out infinite'
     if (mood === 'sad') return 'sad_droop 3s ease-in-out infinite'

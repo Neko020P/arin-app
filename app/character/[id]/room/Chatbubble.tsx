@@ -17,6 +17,8 @@ export default function ChatBubble({ text, spriteUrl, characterName }: Props) {
         return () => clearTimeout(t)
     }, [text])
 
+    const displayText = text?.replace(/ \d+$/, '') ?? null
+
     if (!visible || !text) return null
 
     return (
@@ -48,7 +50,7 @@ export default function ChatBubble({ text, spriteUrl, characterName }: Props) {
                 <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, marginBottom: 4 }}>
                     {characterName}
                 </div>
-                {text}
+                {displayText}
             </div>
 
             {/* Sprite avatar */}

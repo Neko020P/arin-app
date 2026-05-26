@@ -97,11 +97,11 @@ export default function NewCommissionPage() {
 
           {/* Description */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">รายละเอียด</label>
+            <label className="text-sm font-medium">Description</label>
             <textarea
               value={form.description}
               onChange={e => set('description', e.target.value)}
-              placeholder="อธิบายว่า listing นี้รับงานแบบไหน สไตล์อะไร..."
+              placeholder="Describe what type of work this listing accepts and its style..."
               rows={4}
               className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400 resize-none"
             />
@@ -110,7 +110,7 @@ export default function NewCommissionPage() {
           {/* Price + Currency */}
           <div className="flex gap-3">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm font-medium">ราคาเริ่มต้น</label>
+              <label className="text-sm font-medium">Starting Price</label>
               <input
                 type="number"
                 min="0"
@@ -122,7 +122,7 @@ export default function NewCommissionPage() {
               />
             </div>
             <div className="flex flex-col gap-1 w-28">
-              <label className="text-sm font-medium">สกุลเงิน</label>
+              <label className="text-sm font-medium">Currency</label>
               <select
                 value={form.currency}
                 onChange={e => set('currency', e.target.value)}
@@ -139,24 +139,24 @@ export default function NewCommissionPage() {
           {/* Turnaround + Slots */}
           <div className="flex gap-3">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm font-medium">ระยะเวลา (วัน)</label>
+              <label className="text-sm font-medium">Turnaround Time (days)</label>
               <input
                 type="number"
                 min="1"
                 value={form.turnaround_days}
                 onChange={e => set('turnaround_days', e.target.value)}
-                placeholder="เช่น 14"
+                placeholder="e.g., 14"
                 className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
               />
             </div>
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm font-medium">จำนวน Slots</label>
+              <label className="text-sm font-medium">Number of Slots</label>
               <input
                 type="number"
                 min="0"
                 value={form.slots}
                 onChange={e => set('slots', e.target.value)}
-                placeholder="0 = ไม่จำกัด"
+                placeholder="0 = Unlimited"
                 className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
               />
             </div>
@@ -168,7 +168,7 @@ export default function NewCommissionPage() {
             <textarea
               value={form.tos}
               onChange={e => set('tos', e.target.value)}
-              placeholder="เงื่อนไขการรับงาน สิทธิ์การใช้งาน การชำระเงิน..."
+              placeholder="Terms and conditions for accepting commissions, usage rights, payment terms..."
               rows={4}
               className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400 resize-none"
             />

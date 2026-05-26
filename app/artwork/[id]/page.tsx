@@ -83,7 +83,7 @@ export default async function ArtworkDetailPage({
                     href={`/profile/${artist.username}`}
                     className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 mb-8"
                 >
-                    ← กลับไปหน้าโปรไฟล์
+                    ← Back to {artist.display_name || artist.username}'s profile
                 </Link>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -136,7 +136,7 @@ export default async function ArtworkDetailPage({
                                 )}
                             </div>
                             <p className="text-xs text-gray-400 mt-1">
-                                {new Date(artwork.created_at).toLocaleDateString('th-TH', {
+                                {new Date(artwork.created_at).toLocaleDateString('en-EN', {
                                     year: 'numeric', month: 'long', day: 'numeric',
                                 })}
                             </p>

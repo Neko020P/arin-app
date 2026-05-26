@@ -125,13 +125,13 @@ export default function OrderForm({
 
       {/* ชื่อ + Email */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium">ชื่อของคุณ <span className="text-red-400">*</span></label>
+        <label className="text-sm font-medium">Name <span className="text-red-400">*</span></label>
         <input
           type="text"
           required
           value={form.client_name}
           onChange={e => set('client_name', e.target.value)}
-          placeholder="ชื่อหรือนามแฝง"
+          placeholder="Name or username"
           className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
         />
       </div>
@@ -150,12 +150,12 @@ export default function OrderForm({
 
       {/* รายละเอียดที่ต้องการ */}
       <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium">รายละเอียดที่ต้องการ <span className="text-red-400">*</span></label>
+        <label className="text-sm font-medium">Details Requested <span className="text-red-400">*</span></label>
         <textarea
           required
           value={form.description}
           onChange={e => set('description', e.target.value)}
-          placeholder="อธิบายสิ่งที่อยากให้วาด pose, expression, background..."
+          placeholder="Describe what you want drawn: pose, expression, background..."
           rows={4}
           className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400 resize-none"
         />
@@ -165,10 +165,10 @@ export default function OrderForm({
       {characters.length > 0 && (
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">
-            เลือก Character ที่อยากให้วาด
+            Select Characters (optional)
             {selectedCharacters.length > 0 && (
               <span className="ml-2 text-xs text-purple-600">
-                เลือกแล้ว {selectedCharacters.length} ตัว
+                Selected {selectedCharacters.length} characters
               </span>
             )}
           </label>
@@ -218,7 +218,7 @@ export default function OrderForm({
             type="text"
             value={form.character_notes}
             onChange={e => set('character_notes', e.target.value)}
-            placeholder="ลิงก์ ref sheet หรืออธิบาย character ที่ต้องการ"
+            placeholder="Ref sheet link or description of the character you want"
             className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
           />
         </div>
@@ -227,12 +227,12 @@ export default function OrderForm({
       {/* Character notes เพิ่มเติม */}
       {characters.length > 0 && (
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">หมายเหตุเพิ่มเติมเกี่ยวกับ Character</label>
+          <label className="text-sm font-medium">Additional Notes about Characters</label>
           <input
             type="text"
             value={form.character_notes}
             onChange={e => set('character_notes', e.target.value)}
-            placeholder="เช่น ใส่ชุดฤดูหนาว, expression สุขสบาย..."
+            placeholder="e.g., wear winter clothes, peaceful expression..."
             className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
           />
         </div>
@@ -241,7 +241,7 @@ export default function OrderForm({
       {/* Price preview */}
       {basePrice && (
         <div className="bg-purple-50 rounded-xl px-4 py-3 flex items-center justify-between">
-          <span className="text-sm text-gray-600">ราคาเริ่มต้น</span>
+          <span className="text-sm text-gray-600">Starting at</span>
           <span className="font-medium text-purple-600">
             {currency} {basePrice}
           </span>
@@ -255,11 +255,11 @@ export default function OrderForm({
         disabled={submitting}
         className="bg-purple-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
       >
-        {submitting ? 'กำลังส่ง...' : 'ส่ง Order'}
+        {submitting ? 'Submitting...' : 'Submit Order'}
       </button>
 
       <p className="text-xs text-gray-400 text-center">
-        ถ้า login อยู่ characters ของคุณจะขึ้นให้เลือกอัตโนมัติ
+        If you're logged in, your characters will be available for selection automatically.
       </p>
 
     </form>

@@ -85,21 +85,21 @@ export default async function CommissionListingPage({
 
           <div className="grid grid-cols-3 gap-4 pt-4 border-t">
             <div>
-              <p className="text-xs text-gray-400 mb-1">ราคาเริ่มต้น</p>
+              <p className="text-xs text-gray-400 mb-1">Starting Price</p>
               <p className="text-sm font-medium">
                 {listing.price ? `${listing.currency} ${listing.price}` : '—'}
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 mb-1">ระยะเวลา</p>
+              <p className="text-xs text-gray-400 mb-1">Turnaround Time</p>
               <p className="text-sm font-medium">
-                {listing.turnaround_days ? `${listing.turnaround_days} วัน` : '—'}
+                {listing.turnaround_days ? `${listing.turnaround_days} days` : '—'}
               </p>
             </div>
             <div>
               <p className="text-xs text-gray-400 mb-1">Slots</p>
               <p className="text-sm font-medium">
-                {listing.slots > 0 ? listing.slots : 'ไม่จำกัด'}
+                {listing.slots > 0 ? listing.slots : 'Unlimited'}
               </p>
             </div>
           </div>

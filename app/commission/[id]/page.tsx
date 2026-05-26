@@ -100,19 +100,19 @@ export default async function PublicCommissionPage({
             {/* Details */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs text-gray-400 mb-1">ราคาเริ่มต้น</p>
+                <p className="text-xs text-gray-400 mb-1">Starting Price</p>
                 <p className="font-medium">
                   {listing.price
                     ? `${listing.currency ?? 'USD'} ${listing.price}`
-                    : 'ติดต่อสอบถาม'
+                    : 'Contact for pricing'
                   }
                 </p>
               </div>
               <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs text-gray-400 mb-1">ระยะเวลา</p>
+                <p className="text-xs text-gray-400 mb-1">Turnaround Time</p>
                 <p className="font-medium">
                   {listing.turnaround_days
-                    ? `${listing.turnaround_days} วัน`
+                    ? `${listing.turnaround_days} days`
                     : '—'
                   }
                 </p>
@@ -171,7 +171,7 @@ export default async function PublicCommissionPage({
           <div>
             {listing.is_open ? (
               <div className="bg-white border rounded-2xl p-6 sticky top-6">
-                <h2 className="font-medium mb-5">สั่ง Commission นี้</h2>
+                <h2 className="font-medium mb-5">Order This Commission</h2>
                 <OrderForm
                   commissionId={listing.id}
                   artistId={artist.id}

@@ -1,3 +1,4 @@
+//SpeechBubble.tsx
 'use client'
 import { useEffect, useState } from 'react'
 import type { Stats } from '@/lib/stats'
@@ -9,6 +10,7 @@ type Props = {
     posY: number
     lastAction: string | null
     personality: Personality
+    customText?: string | null
 }
 
 const BUBBLES: Record<string, string[]> = {
@@ -45,7 +47,7 @@ function pickRandom(arr: string[]) {
     return arr[Math.floor(Math.random() * arr.length)]
 }
 
-export default function SpeechBubble({ stats, posX, posY, lastAction, personality }: Props) {
+export default function SpeechBubble({ stats, posX, posY, lastAction, personality, customText }: Props) {
     const [text, setText] = useState<string | null>(null)
     const [visible, setVisible] = useState(false)
 
@@ -92,6 +94,14 @@ export default function SpeechBubble({ stats, posX, posY, lastAction, personalit
         const t = setTimeout(() => showBubble(), delay)
         return () => clearTimeout(t)
     }, [stats, visible, personality])
+
+    useEffect(() => {
+        if (!customText) return
+        setText(customText.replace(/\u200B/g, ''))
+        setVisible(true)
+        const t = setTimeout(() => setVisible(false), 4000)
+        return () => clearTimeout(t)
+    }, [customText])
 
     useEffect(() => {
         setVisible(false)
