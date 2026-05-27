@@ -11,7 +11,7 @@ import { Personality } from '@/lib/personality'
 import PersonalitySelector from './PersonalitySelector'
 import { type VisitorData } from './IsoVisitor'
 import RelationshipPanel from './RelationshipPanel'
-import TransferOwnershipPanel from './TransferOwnershipPanel'
+//import TransferOwnershipPanel from './TransferOwnershipPanel'
 import MemoryJournal from './MemoryJournal'
 import Link from 'next/link'
 import ChatManager from './Chatmanager'
@@ -59,9 +59,39 @@ export default function RoomClient({
   initialStats, initialZones, initialCharacter,
   isOwner, currentBgUrl, currentSpriteUrl,
 }: Props) {
+  const savedStatsRef = useRef<Stats & { last_updated: string }>({
+    ...initialStats,
+    social: initialStats.social ?? 80,
+  })
+
   const [liveStats, setLiveStats] = useState<Stats>(() =>
-    calcCurrentStats({ ...initialStats, social: initialStats.social ?? 80 }, initialStats.last_updated)
+    calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated)
   )
+
+  // อัปเดต stats realtime ทุก 5 วิ และ save ลง DB ด้วย
+  useEffect(() => {
+    const tick = async () => {
+      const next = calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated)
+      const now = new Date().toISOString()
+      savedStatsRef.current = { ...next, last_updated: now }
+      setLiveStats(next)
+      await supabase.from('character_stats').update({
+        hunger: Math.round(next.hunger),
+        happiness: Math.round(next.happiness),
+        energy: Math.round(next.energy),
+        social: Math.round(next.social),
+        last_updated: now,
+      }).eq('character_id', characterId)
+    }
+    const id = setInterval(tick, 5_000)
+    return () => clearInterval(id)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function updateLiveStats(next: Stats) {
+    const now = new Date().toISOString()
+    savedStatsRef.current = { ...next, last_updated: now }
+    setLiveStats(next)
+  }
   const [zones, setZones] = useState<RoomZone[]>(initialZones)
   const [pendingAction, setPendingAction] = useState<{ action: string; ts: number } | null>(null)
   const [moodSprites, setMoodSprites] = useState<Record<string, string>>(
@@ -125,7 +155,7 @@ export default function RoomClient({
             visitorTimeoutsRef.current[v.characterId] = setTimeout(() => {
               setVisitors(p => p.filter(x => x.characterId !== v.characterId))
               delete visitorTimeoutsRef.current[v.characterId]
-              createClient().from('character_visits').delete().eq('visitor_id', v.characterId).eq('host_id', characterId).then(() => {})
+              createClient().from('character_visits').delete().eq('visitor_id', v.characterId).eq('host_id', characterId).then(() => { })
             }, 10 * 60 * 1000)
           })
           return [...prev, ...fresh]
@@ -205,7 +235,7 @@ export default function RoomClient({
           {isOwner && (
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <RoomEditor characterId={characterId} currentBgUrl={currentBgUrl} currentSpriteUrl={currentSpriteUrl} currentBgColor={bgColor} onBgColorChange={setBgColor} />
-              <TransferOwnershipPanel characterId={characterId} characterName={characterName} />
+              {/* <TransferOwnershipPanel characterId={characterId} characterName={characterName} /> */}
             </div>
           )}
         </div>
@@ -256,12 +286,14 @@ export default function RoomClient({
             })}
           </div>
 
-          <ActionPanel
-            characterId={characterId} characterName={characterName} liveStats={liveStats}
-            zones={zones} onUpdate={setLiveStats}
-            onTriggerAction={(action) => setPendingAction({ action, ts: Date.now() })}
-            onChatTrigger={(text) => setCustomSpeechText(text + '\u200B'.repeat(Date.now() % 100))}
-          />
+          {isOwner && (
+            <ActionPanel
+              characterId={characterId} characterName={characterName} liveStats={liveStats}
+              zones={zones} onUpdate={updateLiveStats}
+              onTriggerAction={(action) => setPendingAction({ action, ts: Date.now() })}
+              onChatTrigger={(text) => setCustomSpeechText(text + '\u200B'.repeat(Date.now() % 100))}
+            />
+          )}
 
           {isOwner && (
             <button onClick={() => setShowSettings(true)}
