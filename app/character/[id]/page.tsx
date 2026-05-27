@@ -1,7 +1,9 @@
+//app/character/[id]/page.tsx
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import TransferOwnershipPanel from './room/TransferOwnershipPanel'
 
 export default async function PublicCharacterPage({
   params,
@@ -11,7 +13,6 @@ export default async function PublicCharacterPage({
   const { id } = await params
   const supabase = await createClient()
 
-  // ดึง character เฉพาะที่ public
   const { data: character } = await supabase
     .from('characters')
     .select(`
@@ -36,7 +37,11 @@ export default async function PublicCharacterPage({
     avatar_url: string
   }
 
-  // ดึง artworks ที่มี character นี้
+  const { data: { user } } = await supabase.auth.getUser()
+  const isOwner = user
+    ? (await supabase.from('profiles').select('id').eq('user_id', user.id).eq('id', owner.id).maybeSingle()).data !== null
+    : false
+
   const { data: artworkRows } = await supabase
     .from('artwork_characters')
     .select('artworks(id, title, image_url, is_nsfw)')
@@ -67,7 +72,16 @@ export default async function PublicCharacterPage({
           )}
 
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-medium mb-2">{character.name}</h1>
+            {/* ชื่อ + Transfer ปุ่มอยู่ขวาบน */}
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h1 className="text-3xl font-medium">{character.name}</h1>
+              {isOwner && (
+                <TransferOwnershipPanel
+                  characterId={character.id}
+                  characterName={character.name}
+                />
+              )}
+            </div>
 
             {/* Tags */}
             {character.tags?.length > 0 && (
@@ -148,8 +162,7 @@ export default async function PublicCharacterPage({
                     src={artwork.image_url}
                     alt={artwork.title}
                     fill
-                    className={`object-cover transition-transform group-hover:scale-105 ${artwork.is_nsfw ? 'blur-xl' : ''
-                      }`}
+                    className={`object-cover transition-transform group-hover:scale-105 ${artwork.is_nsfw ? 'blur-xl' : ''}`}
                     sizes="(max-width: 768px) 50vw, 33vw"
                   />
                   {artwork.is_nsfw && (
@@ -168,7 +181,6 @@ export default async function PublicCharacterPage({
           </div>
         )}
 
-        {/* ถ้ายังไม่มี artwork */}
         {artworks.length === 0 && (
           <div className="border-2 border-dashed border-gray-200 rounded-2xl py-12 text-center">
             <p className="text-gray-400 text-sm">ยังไม่มีผลงานที่มี character นี้</p>
