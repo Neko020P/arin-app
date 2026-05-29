@@ -130,7 +130,7 @@ export default function IsoVisitor({
       top: cssY,
       transform: 'translate(-50%, -100%)',
       height: tileH * 3,
-      zIndex: pos.col + pos.row + 8,
+      zIndex: (pos.col + pos.row) * 10,
       pointerEvents: 'none',
       transition: `left ${300 / config.speedMultiplier}ms linear, top ${300 / config.speedMultiplier}ms linear`,  // ← เพิ่ม
     }}>

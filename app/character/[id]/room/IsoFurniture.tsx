@@ -156,7 +156,7 @@ export default function IsoFurniture({
                             top: y,
                             transform: 'translate(-50%, -100%)',
                             height: tileH * 2.5,
-                            zIndex: col + row + 5,
+                            zIndex: (col + row) * 10 + 1,
                             cursor: editMode ? 'grab' : 'default',
                             userSelect: 'none',
                             // กระพริบเมื่อ edit mode

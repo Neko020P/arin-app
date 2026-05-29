@@ -11,7 +11,7 @@ import { Personality } from '@/lib/personality'
 import PersonalitySelector from './PersonalitySelector'
 import { type VisitorData } from './IsoVisitor'
 import RelationshipPanel from './RelationshipPanel'
-//import TransferOwnershipPanel from './TransferOwnershipPanel'
+import TransferOwnershipPanel from './TransferOwnershipPanel'
 import MemoryJournal from './MemoryJournal'
 import Link from 'next/link'
 import ChatManager from './Chatmanager'
@@ -210,38 +210,82 @@ export default function RoomClient({
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 280px', height: 'calc(100vh - 0px)', background: bgColor, overflow: 'hidden' }}>
+      {/* ============ MAIN GRID ============ */}
+      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr 260px', height: '100vh', background: bgColor, overflow: 'hidden', fontFamily: 'var(--font-sans, system-ui, sans-serif)' }}>
 
-        {/* LEFT SIDEBAR */}
-        <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.08)', padding: '20px 16px', gap: 8, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-          <Link href={`/character/${characterId}`} style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
-            ← Back
+        {/* ── LEFT SIDEBAR ── */}
+        <aside style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', padding: '18px 14px 14px' }}>
+
+          {/* Back */}
+          <Link href={`/character/${characterId}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.35)', fontSize: 12, textDecoration: 'none', marginBottom: 24, letterSpacing: 0.2, transition: 'color .15s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
           </Link>
-          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+
+          {/* Avatar + name */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 28 }}>
             {avatarUrl
-              ? <img src={avatarUrl} style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.15)', margin: '0 auto 8px', display: 'block' }} />
-              : <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🐾</div>
+              ? <img src={avatarUrl} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.12)' }} />
+              : <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>🐾</div>
             }
-            <div style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>{characterName}</div>
-            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 }}>{characterName}'s Room</div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ color: 'white', fontWeight: 600, fontSize: 14, letterSpacing: 0.1 }}>{characterName}</div>
+              <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 2 }}>Room</div>
+            </div>
           </div>
-          {(['room', 'bonds', 'diary'] as Tab[]).map(t => (
-            <button key={t} onClick={() => setTab(t)} style={{ background: tab === t ? 'rgba(255,255,255,0.12)' : 'transparent', border: 'none', borderRadius: 10, padding: '10px 14px', color: tab === t ? 'white' : 'rgba(255,255,255,0.4)', fontSize: 13, fontWeight: tab === t ? 600 : 400, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10 }}>
-              {t === 'room' ? '🏠' : t === 'bonds' ? '💝' : '📖'}
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </button>
-          ))}
+
+          {/* Nav */}
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {([
+              {
+                id: 'room', label: 'Room',
+                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 22V12L12 3l10 9v10"/><path d="M15 22v-6a3 3 0 0 0-6 0v6"/></svg>,
+              },
+              {
+                id: 'bonds', label: 'Bonds',
+                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+              },
+              {
+                id: 'diary', label: 'Diary',
+                icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="12" y1="6" x2="16" y2="6"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="12" y1="14" x2="16" y2="14"/></svg>,
+              },
+            ] as { id: Tab; label: string; icon: React.ReactNode }[]).map(({ id: t, label, icon }) => {
+              const active = tab === t
+              return (
+                <button key={t} onClick={() => setTab(t)} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 14px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                  fontSize: 13, fontWeight: active ? 600 : 400, letterSpacing: 0.1,
+                  background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  color: active ? 'white' : 'rgba(255,255,255,0.35)',
+                  transition: 'all .15s', textAlign: 'left', width: '100%',
+                  boxShadow: active ? 'inset 0 0 0 1px rgba(255,255,255,0.1)' : 'none',
+                }}
+                  onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)' } }}
+                  onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' } }}>
+                  {icon}
+                  {label}
+                </button>
+              )
+            })}
+          </nav>
+
           <div style={{ flex: 1 }} />
+
+          {/* Owner tools */}
           {isOwner && (
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <RoomEditor characterId={characterId} currentBgUrl={currentBgUrl} currentSpriteUrl={currentSpriteUrl} currentBgColor={bgColor} onBgColorChange={setBgColor} />
-              {/* <TransferOwnershipPanel characterId={characterId} characterName={characterName} /> */}
+              <TransferOwnershipPanel characterId={characterId} characterName={characterName} />
             </div>
           )}
-        </div>
+        </aside>
 
-        {/* CENTER CANVAS */}
-        <div style={{ position: 'relative', overflow: 'hidden' }}>
+        {/* ── CENTER CANVAS ── */}
+        <main style={{ position: 'relative', overflow: 'hidden' }}>
           {tab === 'room' && (
             <>
               <RoomCanvas
@@ -256,49 +300,79 @@ export default function RoomClient({
           )}
           {tab === 'bonds' && <div style={{ padding: 24, overflowY: 'auto', height: '100%' }}><RelationshipPanel characterId={characterId} isOwner={isOwner} /></div>}
           {tab === 'diary' && <div style={{ padding: 24, overflowY: 'auto', height: '100%' }}><MemoryJournal characterId={characterId} /></div>}
-        </div>
+        </main>
 
-        {/* RIGHT PANEL */}
-        <div style={{ borderLeft: '1px solid rgba(255,255,255,0.08)', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 16, overflowY: 'auto', background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 16, padding: 16, textAlign: 'center' }}>
-            {avatarUrl
-              ? <img src={avatarUrl} style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.15)', margin: '0 auto 10px', display: 'block' }} />
-              : <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', margin: '0 auto 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36 }}>🐾</div>
-            }
-            <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>{characterName}</div>
-            <div style={{ display: 'inline-block', marginTop: 6, background: `${badge.color}22`, border: `1px solid ${badge.color}44`, color: badge.color, borderRadius: 20, padding: '3px 10px', fontSize: 11 }}>✨ {badge.label}</div>
+        {/* ── RIGHT PANEL ── */}
+        <aside style={{ borderLeft: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '20px 16px', gap: 14 }}>
+
+          {/* Character card */}
+          <div style={{ borderRadius: 14, overflow: 'hidden', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            {avatarUrl && (
+              <div style={{ width: '100%', height: 90, overflow: 'hidden', position: 'relative' }}>
+                <img src={avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(12px) brightness(0.4)', transform: 'scale(1.1)' }} />
+              </div>
+            )}
+            <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {avatarUrl
+                  ? <img src={avatarUrl} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.15)', flexShrink: 0 }} />
+                  : <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🐾</div>
+                }
+                <div>
+                  <div style={{ color: 'white', fontWeight: 600, fontSize: 14 }}>{characterName}</div>
+                  <div style={{ marginTop: 3, display: 'inline-flex', alignItems: 'center', gap: 4, background: `${badge.color}18`, border: `1px solid ${badge.color}30`, borderRadius: 20, padding: '2px 8px' }}>
+                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: badge.color, flexShrink: 0 }} />
+                    <span style={{ color: badge.color, fontSize: 10, fontWeight: 500 }}>{badge.label}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Stats */}
+          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', gap: 13 }}>
+            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase' }}>Status</span>
             {STATS_CONFIG.map(({ key, label, icon, color }) => {
               const val = Math.round(liveStats[key] ?? 0)
+              const low = val < 25
               return (
                 <div key={key}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{icon} {label}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{val}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                    <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <span style={{ fontSize: 12 }}>{icon}</span>
+                      {label}
+                    </span>
+                    <span style={{ color: low ? color : 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: low ? 600 : 400, transition: 'color .3s' }}>{val}</span>
                   </div>
-                  <div style={{ height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${val}%`, background: color, borderRadius: 99, transition: 'width 0.7s ease' }} />
+                  <div style={{ height: 4, background: 'rgba(255,255,255,0.07)', borderRadius: 99, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${val}%`, background: low ? color : `${color}99`, borderRadius: 99, transition: 'width .6s ease' }} />
                   </div>
                 </div>
               )
             })}
           </div>
 
+          {/* Actions */}
           {isOwner && (
-            <ActionPanel
-              characterId={characterId} characterName={characterName} liveStats={liveStats}
-              zones={zones} onUpdate={updateLiveStats}
-              onTriggerAction={(action) => setPendingAction({ action, ts: Date.now() })}
-              onChatTrigger={(text) => setCustomSpeechText(text + '\u200B'.repeat(Date.now() % 100))}
-            />
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px' }}>
+              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase', display: 'block', marginBottom: 10 }}>Actions</span>
+              <ActionPanel
+                characterId={characterId} characterName={characterName} liveStats={liveStats}
+                zones={zones} onUpdate={updateLiveStats}
+                onTriggerAction={(action) => setPendingAction({ action, ts: Date.now() })}
+                onChatTrigger={(text) => setCustomSpeechText(text + '\u200B'.repeat(Date.now() % 100))}
+              />
+            </div>
           )}
 
+          {/* Settings */}
           {isOwner && (
             <button onClick={() => setShowSettings(true)}
-              style={{ border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, padding: '10px 14px', color: 'rgba(255,255,255,0.7)', background: 'transparent', cursor: 'pointer', fontSize: 13, width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8 }}>
-              ⚙️ Settings
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '10px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.45)', fontSize: 12, cursor: 'pointer', letterSpacing: 0.2, transition: 'all .15s', fontWeight: 500 }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M4.93 4.93A10 10 0 0 1 19.07 19.07"/><path d="M12 2v2m0 18v2M2 12h2m18 0h2"/></svg>
+              Settings
             </button>
           )}
 
@@ -310,28 +384,32 @@ export default function RoomClient({
             hasVisitor={visitors.length > 0}
             onTrigger={setChatText}
           />
-        </div>
+        </aside>
       </div>
 
-      {/* Settings Modal */}
+      {/* ============ SETTINGS MODAL ============ */}
       {showSettings && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={() => setShowSettings(false)}>
-          <div style={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: 360, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
+          <div style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, width: 380, maxHeight: '82vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             onClick={e => e.stopPropagation()}>
 
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 0' }}>
-              <span style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>⚙️ Settings</span>
-              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>✕</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 20px 0' }}>
+              <span style={{ color: 'white', fontWeight: 600, fontSize: 15, letterSpacing: 0.1 }}>Settings</span>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4, borderRadius: 6, transition: 'color .15s' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
 
             {/* Sub-tabs */}
-            <div style={{ display: 'flex', gap: 4, padding: '16px 20px 0' }}>
+            <div style={{ display: 'flex', gap: 4, padding: '14px 20px 0' }}>
               {SETTINGS_TABS.map(t => (
                 <button key={t.id} onClick={() => setSettingsTab(t.id)}
-                  style={{ flex: 1, padding: '8px 4px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: settingsTab === t.id ? 700 : 400, background: settingsTab === t.id ? 'rgba(167,139,250,0.2)' : 'rgba(255,255,255,0.05)', color: settingsTab === t.id ? '#a78bfa' : 'rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                  <span style={{ fontSize: 16 }}>{t.icon}</span>
+                  style={{ flex: 1, padding: '8px 4px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: settingsTab === t.id ? 700 : 500, letterSpacing: 0.3, background: settingsTab === t.id ? 'rgba(167,139,250,0.15)' : 'rgba(255,255,255,0.04)', color: settingsTab === t.id ? '#a78bfa' : 'rgba(255,255,255,0.35)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, transition: 'all .15s', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: 15 }}>{t.icon}</span>
                   {t.label}
                 </button>
               ))}
@@ -339,15 +417,9 @@ export default function RoomClient({
 
             {/* Content */}
             <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
-              {settingsTab === 'personality' && (
-                <PersonalitySelector characterId={characterId} current={personality} onUpdate={setPersonality} />
-              )}
-              {settingsTab === 'appearance' && (
-                <MoodSpriteUpload characterId={characterId} currentSprites={moodSprites} onUpdate={setMoodSprites} />
-              )}
-              {settingsTab === 'furniture' && (
-                <CustomFurniturePanel characterId={characterId} zones={zones as any} onZonesChange={setZones as any} />
-              )}
+              {settingsTab === 'personality' && <PersonalitySelector characterId={characterId} current={personality} onUpdate={setPersonality} />}
+              {settingsTab === 'appearance' && <MoodSpriteUpload characterId={characterId} currentSprites={moodSprites} onUpdate={setMoodSprites} />}
+              {settingsTab === 'furniture' && <CustomFurniturePanel characterId={characterId} zones={zones as any} onZonesChange={setZones as any} />}
               {settingsTab === 'chat' && (
                 <ChatManager
                   characterId={characterId}
