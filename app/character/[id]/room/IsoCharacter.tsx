@@ -33,20 +33,62 @@ type Props = {
   // actingAction: string | null
 }
 
-function getNextStep(current: GridPos, target: GridPos): GridPos {
-  const dc = Math.sign(target.col - current.col)
-  const dr = Math.sign(target.row - current.row)
-  // เดินทีละแกน (ไม่ diagonal)
-  if (dc !== 0) return { col: current.col + dc, row: current.row }
-  if (dr !== 0) return { col: current.col, row: current.row + dr }
-  return current
+// BFS หา path หลีกเลี่ยง occupied cells
+function bfsPath(
+  start: GridPos,
+  goal: GridPos,
+  cols: number,
+  rows: number,
+  occupied: Set<string>,
+): GridPos[] {
+  const key = (p: GridPos) => `${p.col},${p.row}`
+  const isWalkable = (p: GridPos) =>
+    p.col >= 0 && p.col < cols && p.row >= 0 && p.row < rows && !occupied.has(key(p))
+
+  if (!isWalkable(goal)) {
+    // หา cell ที่เดินได้ใกล้ goal ที่สุดแทน
+    const candidates: GridPos[] = []
+    for (let dc = -1; dc <= 1; dc++)
+      for (let dr = -1; dr <= 1; dr++) {
+        const p = { col: goal.col + dc, row: goal.row + dr }
+        if (isWalkable(p)) candidates.push(p)
+      }
+    if (candidates.length === 0) return []
+    candidates.sort((a, b) =>
+      Math.abs(a.col - start.col) + Math.abs(a.row - start.row) -
+      (Math.abs(b.col - start.col) + Math.abs(b.row - start.row))
+    )
+    goal = candidates[0]
+  }
+
+  const visited = new Set<string>([key(start)])
+  const queue: Array<{ pos: GridPos; path: GridPos[] }> = [{ pos: start, path: [] }]
+
+  while (queue.length > 0) {
+    const { pos, path } = queue.shift()!
+    const next = path.concat(pos)
+
+    if (pos.col === goal.col && pos.row === goal.row) return next.slice(1)
+
+    for (const [dc, dr] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+      const nb = { col: pos.col + dc, row: pos.row + dr }
+      const k = key(nb)
+      if (!visited.has(k) && isWalkable(nb)) {
+        visited.add(k)
+        queue.push({ pos: nb, path: next })
+      }
+    }
+  }
+  return [] // ไม่มีทาง
 }
 
-function randomCell(cols: number, rows: number): GridPos {
-  return {
-    col: Math.floor(Math.random() * cols),
-    row: Math.floor(Math.random() * rows),
-  }
+function randomWalkableCell(cols: number, rows: number, occupied: Set<string>): GridPos {
+  const candidates: GridPos[] = []
+  for (let c = 0; c < cols; c++)
+    for (let r = 0; r < rows; r++)
+      if (!occupied.has(`${c},${r}`)) candidates.push({ col: c, row: r })
+  if (candidates.length === 0) return { col: 0, row: 0 }
+  return candidates[Math.floor(Math.random() * candidates.length)]
 }
 
 type Mood = 'happy' | 'normal' | 'sad'
@@ -82,6 +124,7 @@ export default function IsoCharacter({
   const modeRef = useRef<CharacterMode>({ type: 'wander' })
   const waitRef = useRef(false)
   const targetRef = useRef<GridPos | null>(null)
+  const wanderPathRef = useRef<GridPos[]>([])
 
   const mood = getMood(stats)
   const config = PERSONALITY_CONFIG[personality] ?? PERSONALITY_CONFIG['friendly']
@@ -101,9 +144,12 @@ export default function IsoCharacter({
       ? { col: zone.col, row: zone.row }
       : { col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) }
 
+    const occupied = new Set(zones.map(z => `${z.col},${z.row}`))
+    const path = bfsPath(posRef.current, target, gridCols, gridRows, occupied)
+
     modeRef.current = {
       type: 'walking_to',
-      path: [target],
+      path: path.length > 0 ? path : [target],
       onArrive: () => {
         modeRef.current = { type: 'acting', action: pendingAction.action }
         onArrive(pendingAction.action)
@@ -131,17 +177,16 @@ export default function IsoCharacter({
       }
 
       if (mode.type === 'walking_to') {
-        const target = mode.path[0]
-        if (!target) { modeRef.current = { type: 'wander' }; return }
-
         const current = posRef.current
-        if (current.col === target.col && current.row === target.row) {
+
+        // ถึงปลายทางแล้ว
+        if (mode.path.length === 0) {
           mode.onArrive()
           return
         }
 
         setCurrentMode('walking')
-        const next = getNextStep(current, target)
+        const next = mode.path.shift()!
         setFacing(next.col > current.col ? 'right' : next.col < current.col ? 'left' : facing)
         posRef.current = next
         setPos(next)
@@ -152,8 +197,9 @@ export default function IsoCharacter({
       // wander mode
       if (waitRef.current) return
 
+      const occupied = new Set(zones.map(z => `${z.col},${z.row}`))
       const current = posRef.current
-      if (targetRef.current === null) targetRef.current = randomCell(gridCols, gridRows)
+      if (targetRef.current === null) targetRef.current = randomWalkableCell(gridCols, gridRows, occupied)
       const target = targetRef.current
 
       if (current.col === target.col && current.row === target.row) {
@@ -162,19 +208,24 @@ export default function IsoCharacter({
         waitRef.current = true
         const wait = (MIN_WAIT + Math.random() * (MAX_WAIT - MIN_WAIT)) * config.waitMultiplier
         setTimeout(() => {
-          const min = config.stayNearCenter ? 1 : 0
-          const maxC = config.stayNearCenter ? gridCols - 2 : gridCols - 1
-          const maxR = config.stayNearCenter ? gridRows - 2 : gridRows - 1
-          targetRef.current = {
-            col: min + Math.floor(Math.random() * (maxC - min + 1)),
-            row: min + Math.floor(Math.random() * (maxR - min + 1)),
-          }
+          targetRef.current = randomWalkableCell(gridCols, gridRows, occupied)
+          wanderPathRef.current = []
           waitRef.current = false
         }, wait)
         return
       }
 
-      const next = getNextStep(current, target)
+      // หา path ผ่าน BFS ถ้ายังไม่มี
+      if (!wanderPathRef.current || wanderPathRef.current.length === 0) {
+        wanderPathRef.current = bfsPath(current, target, gridCols, gridRows, occupied)
+        if (wanderPathRef.current.length === 0) {
+          // ไม่มีทาง สุ่ม target ใหม่
+          targetRef.current = randomWalkableCell(gridCols, gridRows, occupied)
+          return
+        }
+      }
+
+      const next = wanderPathRef.current.shift()!
       if (next.col > current.col) setFacing('right')
       else if (next.col < current.col) setFacing('left')
       setCurrentMode('walking')
@@ -230,7 +281,7 @@ export default function IsoCharacter({
         top: cssY,
         transform: 'translate(-50%, -100%)',
         height: tileH * 3,
-        zIndex: pos.col + pos.row + 10,
+        zIndex: (pos.col + pos.row) * 10,
         pointerEvents: 'none',
         transition: `left 300ms linear, top 300ms linear`,
       }}

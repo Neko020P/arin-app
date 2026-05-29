@@ -118,7 +118,7 @@ export default function SpeechBubble({ stats, posX, posY, lastAction, personalit
                 left: posX,
                 top: posY - 120,   // ลอยเหนือหัว
                 transform: 'translateX(-50%)',
-                zIndex: 30,
+                zIndex: 9999,
                 animation: 'bubbleIn 0.3s ease-out',
             }}
         >

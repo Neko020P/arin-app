@@ -61,7 +61,9 @@ export default function CustomFurniturePanel({ characterId, zones, onZonesChange
     if (error) { setUploading(false); return }
     const { data: { publicUrl } } = supabase.storage.from('artworks').getPublicUrl(storage.path)
 
-    const zoneType = `custom_${customZones.length + 1}`
+    const usedSlots = customZones.map(z => z.zone_type)
+    const zoneType = ['custom_1','custom_2','custom_3','custom_4','custom_5'].find(s => !usedSlots.includes(s))
+    if (!zoneType) { setUploading(false); return }
     const customData: CustomData = { ...DEFAULT_CUSTOM, label: file.name.replace(/\.[^/.]+$/, '') }
 
     const { data: newZone } = await supabase.from('room_zones')
