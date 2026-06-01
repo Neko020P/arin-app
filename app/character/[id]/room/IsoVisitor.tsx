@@ -10,6 +10,7 @@ export type VisitorData = {
   spriteUrl: string
   personality: Personality
   tier: 'stranger' | 'friend' | 'rival'
+  zones?: { col: number; row: number }[]   // host room zones passed in
 }
 
 type GridPos = { col: number; row: number }
@@ -39,39 +40,110 @@ type Props = {
   onLeave: (characterId: string) => void
 }
 
-function getNextStep(current: GridPos, target: GridPos): GridPos {
-  const dc = Math.sign(target.col - current.col)
-  const dr = Math.sign(target.row - current.row)
-  if (dc !== 0) return { col: current.col + dc, row: current.row }
-  if (dr !== 0) return { col: current.col, row: current.row + dr }
-  return current
+// ---- BFS (same as IsoCharacter) ----------------------------------------
+function bfsPath(
+  start: GridPos,
+  goal: GridPos,
+  cols: number,
+  rows: number,
+  occupied: Set<string>,
+): GridPos[] {
+  const key = (p: GridPos) => `${p.col},${p.row}`
+  const isWalkable = (p: GridPos) =>
+    p.col >= 0 && p.col < cols && p.row >= 0 && p.row < rows && !occupied.has(key(p))
+
+  let actualGoal = goal
+  if (!isWalkable(goal)) {
+    let best: GridPos | null = null
+    let bestDist = Infinity
+    for (let dc = -1; dc <= 1; dc++) {
+      for (let dr = -1; dr <= 1; dr++) {
+        if (dc === 0 && dr === 0) continue
+        const p = { col: goal.col + dc, row: goal.row + dr }
+        if (!isWalkable(p)) continue
+        const d = Math.abs(p.col - start.col) + Math.abs(p.row - start.row)
+        if (d < bestDist) { bestDist = d; best = p }
+      }
+    }
+    if (!best) return []
+    actualGoal = best
+  }
+
+  if (start.col === actualGoal.col && start.row === actualGoal.row) return []
+
+  const visited = new Set<string>([key(start)])
+  const queue: Array<{ pos: GridPos; path: GridPos[] }> = [{ pos: start, path: [] }]
+
+  while (queue.length > 0) {
+    const { pos, path } = queue.shift()!
+    for (const [dc, dr] of [[0, 1], [0, -1], [1, 0], [-1, 0]] as [number, number][]) {
+      const nb: GridPos = { col: pos.col + dc, row: pos.row + dr }
+      const k = key(nb)
+      if (visited.has(k) || !isWalkable(nb)) continue
+      visited.add(k)
+      const newPath = [...path, nb]
+      if (nb.col === actualGoal.col && nb.row === actualGoal.row) return newPath
+      queue.push({ pos: nb, path: newPath })
+    }
+  }
+  return []
 }
 
+function buildOccupied(zones?: { col: number; row: number }[]): Set<string> {
+  return new Set((zones ?? []).map(z => `${z.col},${z.row}`))
+}
+
+// หา entry point ที่ไม่ occupied
+function safeEntryPos(gridCols: number, gridRows: number, occupied: Set<string>): GridPos {
+  const candidates: GridPos[] = []
+  for (let c = 0; c < gridCols; c++) {
+    if (!occupied.has(`${c},0`)) candidates.push({ col: c, row: 0 })
+    if (!occupied.has(`${c},${gridRows - 1}`)) candidates.push({ col: c, row: gridRows - 1 })
+  }
+  for (let r = 1; r < gridRows - 1; r++) {
+    if (!occupied.has(`0,${r}`)) candidates.push({ col: 0, row: r })
+    if (!occupied.has(`${gridCols - 1},${r}`)) candidates.push({ col: gridCols - 1, row: r })
+  }
+  if (candidates.length === 0) return { col: 0, row: 0 }
+  return candidates[Math.floor(Math.random() * candidates.length)]
+}
+
+// ---- component ---------------------------------------------------------
 export default function IsoVisitor({
   visitor, gridCols, gridRows, tileW, tileH, originX, originY,
   containerRef, canvasW, onLeave,
 }: Props) {
-  // entry จากขอบ grid (สุ่มขอบ)
-  const entryPos: GridPos = (() => {
-    const side = Math.floor(Math.random() * 4)
-    if (side === 0) return { col: 0, row: Math.floor(Math.random() * gridRows) }
-    if (side === 1) return { col: gridCols - 1, row: Math.floor(Math.random() * gridRows) }
-    if (side === 2) return { col: Math.floor(Math.random() * gridCols), row: 0 }
-    return { col: Math.floor(Math.random() * gridCols), row: gridRows - 1 }
-  })()
+  const occupied = buildOccupied(visitor.zones)
+  const entryPos = safeEntryPos(gridCols, gridRows, occupied)
 
   const [pos, setPos] = useState<GridPos>(entryPos)
   const [bubble, setBubble] = useState<string | null>(null)
   const [facing, setFacing] = useState<'left' | 'right'>('right')
+
   const posRef = useRef<GridPos>(entryPos)
-  const targetRef = useRef<GridPos>({
-    col: Math.floor(gridCols / 2) + Math.floor(Math.random() * 3) - 1,
-    row: Math.floor(gridRows / 2) + Math.floor(Math.random() * 3) - 1,
-  })
+  const facingRef = useRef<'left' | 'right'>('right')
+  const pathRef = useRef<GridPos[]>([])
   const leavingRef = useRef(false)
+  const leftRef = useRef(false)
+
+  // walk target: กลางห้อง ±1 และ walkable
+  const meetTarget = useRef<GridPos>((() => {
+    const cx = Math.floor(gridCols / 2)
+    const cy = Math.floor(gridRows / 2)
+    for (let dr = 0; dr <= 2; dr++) {
+      for (let dc = 0; dc <= 2; dc++) {
+        const p = { col: cx + dc, row: cy + dr }
+        if (!occupied.has(`${p.col},${p.row}`) && p.col < gridCols && p.row < gridRows) return p
+        const p2 = { col: cx - dc, row: cy - dr }
+        if (!occupied.has(`${p2.col},${p2.row}`) && p2.col >= 0 && p2.row >= 0) return p2
+      }
+    }
+    return { col: cx, row: cy }
+  })())
+
   const config = PERSONALITY_CONFIG[visitor.personality] ?? PERSONALITY_CONFIG['friendly']
 
-  // แสดง bubble ตาม tier
+  // bubble
   useEffect(() => {
     const lines = TIER_BUBBLE[visitor.tier]
     const delay = setTimeout(() => {
@@ -79,49 +151,70 @@ export default function IsoVisitor({
       setTimeout(() => setBubble(null), 3000)
     }, 2000)
     return () => clearTimeout(delay)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ออกจาก room หลัง duration
+  // leave timer
   useEffect(() => {
     const timeout = setTimeout(() => {
       leavingRef.current = true
-      // เดินออกไปขอบ
-      targetRef.current = entryPos
+      // คำนวณ path กลับ entry
+      pathRef.current = bfsPath(posRef.current, entryPos, gridCols, gridRows, occupied)
     }, TIER_DURATION[visitor.tier])
     return () => clearTimeout(timeout)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // movement loop
   useEffect(() => {
-    const interval = setInterval(() => {
-      const current = posRef.current
-      const target = targetRef.current
+    // คำนวณ path ไป meetTarget ก่อน
+    pathRef.current = bfsPath(entryPos, meetTarget.current, gridCols, gridRows, occupied)
 
-      if (current.col === target.col && current.row === target.row) {
-        if (leavingRef.current) {
-          onLeave(visitor.characterId)
-        }
+    const interval = setInterval(() => {
+      if (leftRef.current) return
+
+      const current = posRef.current
+
+      // มี path ให้เดิน
+      if (pathRef.current.length > 0) {
+        const next = pathRef.current.shift()!
+        const newFacing = next.col > current.col ? 'right' : next.col < current.col ? 'left' : facingRef.current
+        facingRef.current = newFacing
+        setFacing(newFacing)
+        posRef.current = next
+        setPos(next)
         return
       }
 
-      const next = getNextStep(current, target)
-      if (next.col > current.col) setFacing('right')
-      else if (next.col < current.col) setFacing('left')
-      posRef.current = next
-      setPos(next)
+      // path หมดแล้ว ถ้ากำลัง leaving และถึง entryPos → ออก
+      if (leavingRef.current) {
+        if (current.col === entryPos.col && current.row === entryPos.row) {
+          leftRef.current = true
+          onLeave(visitor.characterId)
+        } else {
+          // path กลับหมดแต่ยังไม่ถึง → คำนวณใหม่
+          pathRef.current = bfsPath(current, entryPos, gridCols, gridRows, occupied)
+        }
+      }
+      // ถ้าไม่ leaving ก็หยุดรอ (ยืนอยู่กลางห้อง)
     }, 300 / config.speedMultiplier)
 
     return () => clearInterval(interval)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // แปลง pos → CSS
+  // ---- render ---------------------------------------------------------
   const screen = isoToScreen(pos.col, pos.row, tileW, tileH, originX, originY)
   const rect = containerRef.current?.getBoundingClientRect()
+  const svgW = (gridCols + gridRows) * (tileW / 2)
   const svgH = (gridCols + gridRows) * (tileH / 2)
-  const scaleX = rect ? rect.width / canvasW : 1
-  const scaleY = rect ? rect.height / (svgH + tileH) : 1
-  const cssX = screen.x * scaleX
-  const cssY = screen.y * scaleY
+  const rW = rect?.width ?? svgW
+  const rH = rect?.height ?? svgH
+  const scale = Math.min(rW / svgW, rH / svgH)
+  const offsetX = (rW - svgW * scale) / 2
+  const offsetY = (rH - svgH * scale) / 2
+  const vbX = originX - svgW / 2
+  const vbY = originY - tileH / 2
+  const cssX = (screen.x - vbX) * scale + offsetX
+  const cssY = (screen.y - vbY) * scale + offsetY
+  const stepMs = 300 / config.speedMultiplier
 
   return (
     <div style={{
@@ -132,9 +225,9 @@ export default function IsoVisitor({
       height: tileH * 3,
       zIndex: (pos.col + pos.row) * 10,
       pointerEvents: 'none',
-      transition: `left ${300 / config.speedMultiplier}ms linear, top ${300 / config.speedMultiplier}ms linear`,  // ← เพิ่ม
+      transition: `left ${stepMs}ms linear, top ${stepMs}ms linear`,
     }}>
-      {/* bubble */}
+      {/* speech bubble */}
       {bubble && (
         <div style={{
           position: 'absolute',
@@ -148,6 +241,7 @@ export default function IsoVisitor({
           fontSize: 12,
           whiteSpace: 'nowrap',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          zIndex: 9999,
         }}>
           {bubble}
           <div style={{
@@ -171,6 +265,7 @@ export default function IsoVisitor({
         fontSize: 10,
         color: visitor.tier === 'rival' ? '#ff6b6b' : visitor.tier === 'friend' ? '#69db7c' : '#aaa',
         whiteSpace: 'nowrap',
+        zIndex: 9999,
       }}>
         {visitor.tier === 'friend' ? '💚' : visitor.tier === 'rival' ? '⚔️' : '👤'} {visitor.name}
       </div>

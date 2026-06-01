@@ -17,6 +17,7 @@ import Link from 'next/link'
 import ChatManager from './Chatmanager'
 import ChatBubble from './Chatbubble'
 import CustomFurniturePanel from './Customfurniturepanel'
+import ZoneEditor from './ZoneEditor'
 
 export type RoomZone = {
   id: string
@@ -391,7 +392,7 @@ export default function RoomClient({
       {showSettings && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={() => setShowSettings(false)}>
-          <div style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, width: 380, maxHeight: '82vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          <div style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, width: '80vw', maxWidth: 900, height: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             onClick={e => e.stopPropagation()}>
 
             {/* Header */}
@@ -419,7 +420,12 @@ export default function RoomClient({
             <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
               {settingsTab === 'personality' && <PersonalitySelector characterId={characterId} current={personality} onUpdate={setPersonality} />}
               {settingsTab === 'appearance' && <MoodSpriteUpload characterId={characterId} currentSprites={moodSprites} onUpdate={setMoodSprites} />}
-              {settingsTab === 'furniture' && <CustomFurniturePanel characterId={characterId} zones={zones as any} onZonesChange={setZones as any} />}
+              {settingsTab === 'furniture' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <ZoneEditor characterId={characterId} zones={zones} onZonesChange={setZones} />
+                  <CustomFurniturePanel characterId={characterId} zones={zones as any} onZonesChange={setZones as any} />
+                </div>
+              )}
               {settingsTab === 'chat' && (
                 <ChatManager
                   characterId={characterId}

@@ -17,19 +17,21 @@ type Props = {
     tileH: number
     originX: number
     originY: number
-    editMode: boolean                                           // ← เพิ่ม
-    containerRef: React.RefObject<HTMLDivElement | null>        // ← เพิ่ม
-    onZoneMove: (id: string, col: number, row: number) => void // ← เพิ่ม
-    onHighlight: (cell: { col: number; row: number } | null) => void // ← เพิ่ม
+    editMode: boolean
+    containerRef: React.RefObject<HTMLDivElement | null>
+    onZoneMove: (id: string, col: number, row: number) => void
+    onHighlight: (cell: { col: number; row: number } | null) => void
     gridCols: number
     gridRows: number
     canvasW: number
+    charPos?: { col: number; row: number }
+    isActing?: boolean
 }
 
 export default function IsoFurniture({
     zones, tileW, tileH, originX, originY,
     editMode, containerRef, onZoneMove, onHighlight,
-    gridCols, gridRows,
+    gridCols, gridRows, charPos, isActing,
 }: Props) {
     const draggingRef = useRef<string | null>(null)
 
@@ -42,12 +44,16 @@ export default function IsoFurniture({
         const { x, y } = isoToScreen(col, row, tileW, tileH, originX, originY)
         const rect = containerRef.current?.getBoundingClientRect()
         if (!rect) return { x: 0, y: 0 }
+        const svgW = (gridCols + gridRows) * (tileW / 2)
         const svgH = (gridCols + gridRows) * (tileH / 2)
-        const scaleX = rect.width / canvasW
-        const scaleY = rect.height / (svgH + tileH)
-        // x, y จาก isoToScreen คือ canvas coordinate ตรงๆ
-        const cssX = x * scaleX
-        const cssY = y * scaleY
+        // match SVG preserveAspectRatio xMidYMid meet
+        const scale = Math.min(rect.width / svgW, rect.height / svgH)
+        const offsetX = (rect.width - svgW * scale) / 2
+        const offsetY = (rect.height - svgH * scale) / 2
+        const vbX = originX - svgW / 2
+        const vbY = originY - tileH / 2
+        const cssX = (x - vbX) * scale + offsetX
+        const cssY = (y - vbY) * scale + offsetY
         return { x: cssX, y: cssY }
     }
 
@@ -156,7 +162,12 @@ export default function IsoFurniture({
                             top: y,
                             transform: 'translate(-50%, -100%)',
                             height: tileH * 2.5,
-                            zIndex: (col + row) * 10 + 1,
+                            zIndex: (() => {
+                              const furDepth = (col + row) * 10
+                              if (!charPos || isActing) return furDepth + 1
+                              const charDepth = (charPos.col + charPos.row) * 10
+                              return furDepth >= charDepth ? furDepth + 1 : furDepth - 1
+                            })(),
                             cursor: editMode ? 'grab' : 'default',
                             userSelect: 'none',
                             // กระพริบเมื่อ edit mode

@@ -70,7 +70,7 @@ export default function MoodSpriteUpload({ characterId, currentSprites, onUpdate
                    rounded-xl border border-white/10 text-white/50 text-sm
                    hover:bg-white/5 transition-colors"
       >
-        <span>😊 สีหน้าตามอารมณ์</span>
+        <span>😊 Emotions</span>
         <span>{expanded ? '▲' : '▼'}</span>
       </button>
 

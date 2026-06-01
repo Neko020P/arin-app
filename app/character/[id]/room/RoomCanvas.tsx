@@ -149,15 +149,15 @@ export default function RoomCanvas({
           tileH={TILE_H}
           originX={originX}
           originY={originY}
-          editMode={editMode}             // ← เพิ่ม
+          editMode={editMode}
           containerRef={containerRef as React.RefObject<HTMLDivElement>}
-          gridCols={GRID_COLS}            // ← เพิ่ม
-          gridRows={GRID_ROWS}            // ← เพิ่ม
-          onHighlight={setHighlightCell}  // ← เพิ่ม
-          onZoneMove={(id, col, row) => {
-            onZonesChange(id, col, row)  // ← ส่ง 3 arguments ตรงๆ
-          }}
+          gridCols={GRID_COLS}
+          gridRows={GRID_ROWS}
+          onHighlight={setHighlightCell}
+          onZoneMove={(id, col, row) => { onZonesChange(id, col, row) }}
           canvasW={canvasW}
+          charPos={charPos}
+          isActing={!!pendingAction}
         />
 
         {/* Character */}

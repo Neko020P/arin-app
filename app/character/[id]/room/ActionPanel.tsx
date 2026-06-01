@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { applyAction, applyCustomAction } from '@/lib/stats'
 import type { Stats } from '@/lib/stats'
@@ -77,7 +77,17 @@ export default function ActionPanel({
   characterId, characterName, liveStats, zones, onUpdate, onTriggerAction, onChatTrigger,
 }: Props) {
   const supabase = createClient()
+  const STORAGE_KEY = `action_cooldowns_${characterId}`
+
   const [lastUsed, setLastUsed] = useState<Record<string, number>>({})
+
+  // โหลด cooldown จาก localStorage หลัง mount เท่านั้น (ป้องกัน SSR hydration mismatch)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) setLastUsed(JSON.parse(raw))
+    } catch {}
+  }, [STORAGE_KEY])
   const [loading, setLoading] = useState<string | null>(null)
 
   const customZones = zones.filter(z => z.zone_type.startsWith('custom') && (z as any).custom_data)
@@ -104,7 +114,11 @@ export default function ActionPanel({
 
       if (!error) {
         onUpdate(next)
-        setLastUsed(prev => ({ ...prev, [actionId]: Date.now() }))
+        setLastUsed(prev => {
+          const next = { ...prev, [actionId]: Date.now() }
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
+          return next
+        })
         if (customData?.bubble_message) onChatTrigger?.(customData.bubble_message)
         fetch('/api/memory', {
           method: 'POST',

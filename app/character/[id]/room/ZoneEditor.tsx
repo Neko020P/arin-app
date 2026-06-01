@@ -14,11 +14,9 @@ type Props = {
   characterId: string
   zones: RoomZone[]
   onZonesChange: (zones: RoomZone[]) => void
-  gridCols: number 
-  gridRows: number
 }
 
-export default function ZoneEditor({ characterId, zones = [], onZonesChange, gridCols, gridRows }: Props) {
+export default function ZoneEditor({ characterId, zones = [], onZonesChange }: Props) {
   const supabase = createClient()
   const [uploading, setUploading] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
@@ -94,17 +92,6 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange, gri
       .eq('id', zone.id)
   }
 
-  async function updateGridPos(type: string, col: number, row: number) {
-    const zone = getZone(type)
-    if (!zone) return
-
-    onZonesChange(zones.map(z => z.zone_type === type ? { ...z, col, row } : z))
-
-    await supabase.from('room_zones')
-      .update({ col, row })
-      .eq('id', zone.id)
-  }
-
   return (
     <div className="w-full max-w-sm">
       <button
@@ -113,7 +100,7 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange, gri
                    rounded-xl border border-white/10 text-white/50 text-sm
                    hover:bg-white/5 transition-colors"
       >
-        <span>🏠 จัดห้อง</span>
+        <span>🏠 Main Furniture</span>
         <span>{expanded ? '▲' : '▼'}</span>
       </button>
 
@@ -168,29 +155,7 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange, gri
                       )}
                     </div>
 
-                    {/* Grid position */}
-                    <div className="grid grid-cols-2 gap-2 text-xs text-white/40">
-                      <label className="flex flex-col gap-1">
-                        <span>← → (Col)</span>
-                        <input
-                          type="range" min={0} max={gridCols - 1} step={1}
-                          value={zone.col ?? 1}
-                          onChange={e => updateGridPos(type, Number(e.target.value), zone.row ?? 1)}
-                          className="w-full"
-                        />
-                        <span className="text-center">Col {zone.col ?? 1}</span>
-                      </label>
-                      <label className="flex flex-col gap-1">
-                        <span>↑ ↓ (Row)</span>
-                        <input
-                          type="range" min={0} max={gridRows - 1} step={1}
-                          value={zone.row ?? 1}
-                          onChange={e => updateGridPos(type, zone.col ?? 1, Number(e.target.value))}
-                          className="w-full"
-                        />
-                        <span className="text-center">Row {zone.row ?? 1}</span>
-                      </label>
-                    </div>
+
                   </>
                 )}
               </div>
