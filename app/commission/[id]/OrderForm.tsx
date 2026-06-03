@@ -112,9 +112,9 @@ export default function OrderForm({
     return (
       <div className="text-center py-8">
         <p className="text-3xl mb-3">✅</p>
-        <h3 className="font-medium mb-2">ส่ง Order สำเร็จแล้ว</h3>
+        <h3 className="font-medium mb-2">Order Submitted Successfully</h3>
         <p className="text-sm text-gray-500 leading-relaxed">
-          artist จะติดต่อกลับผ่าน email ที่คุณให้ไว้ครับ
+          Thank you for your order! The artist will review your request and get back to you via email within a few days.
         </p>
       </div>
     )

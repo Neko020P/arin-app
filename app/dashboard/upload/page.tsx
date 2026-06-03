@@ -37,7 +37,7 @@ export default async function UploadPage() {
         )}
         {characters && characters.length > 0 && (
           <p className="text-sm text-gray-400 mb-8">
-            เลือก character ที่ปรากฏในผลงานนี้ได้เลย
+            Select the character that appears in this artwork.
           </p>
         )}
         <ArtworkUpload

@@ -29,7 +29,9 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', request.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
   if (
@@ -37,7 +39,14 @@ export async function proxy(request: NextRequest) {
     (request.nextUrl.pathname.startsWith('/login') ||
       request.nextUrl.pathname.startsWith('/signup'))
   ) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    // ดึง username จาก profile แล้ว redirect ไปหน้า profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('user_id', user.id)
+      .single()
+    const destination = profile?.username ? `/profile/${profile.username}` : '/dashboard'
+    return NextResponse.redirect(new URL(destination, request.url))
   }
 
   return response

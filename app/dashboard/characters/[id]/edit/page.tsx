@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 
 export default function EditCharacterPage() {
   const router = useRouter()
-  const { id } = useParams<{ id: string }>()
+  const params = useParams()
   const supabase = createClient()
 
   const [loading, setLoading] = useState(true)
@@ -21,10 +21,16 @@ export default function EditCharacterPage() {
     is_public:     true,
   })
 
+  const id = typeof params?.id === 'string' ? params.id
+           : Array.isArray(params?.id) ? params.id[0]
+           : null
+
   useEffect(() => {
+    if (!id) return
+
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.push('/login')
+      if (!user) { router.push('/login'); return }
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -32,16 +38,16 @@ export default function EditCharacterPage() {
         .eq('user_id', user.id)
         .single()
 
-      if (!profile) return router.push('/profile/edit')
+      if (!profile) { router.push('/profile/edit'); return }
 
-      const { data: character } = await supabase
+      const { data: character, error: fetchError } = await supabase
         .from('characters')
         .select('*')
         .eq('id', id)
-        .eq('owner_id', profile.id)
         .single()
 
-      if (!character) return router.push('/dashboard/characters')
+      if (fetchError || !character) { router.push('/dashboard/characters'); return }
+      if (character.owner_id !== profile.id) { router.push('/dashboard/characters'); return }
 
       setForm({
         name:          character.name ?? '',
@@ -53,7 +59,7 @@ export default function EditCharacterPage() {
       setLoading(false)
     }
     load()
-  }, [id])
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function set(field: string, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -63,6 +69,11 @@ export default function EditCharacterPage() {
     e.preventDefault()
     setSaving(true)
     setError('')
+
+    const id = typeof params?.id === 'string' ? params.id
+             : Array.isArray(params?.id) ? params.id[0]
+             : null
+    if (!id) return
 
     const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
 
@@ -84,7 +95,7 @@ export default function EditCharacterPage() {
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400 text-sm">กำลังโหลด...</p>
+        <p className="text-gray-400 text-sm">Loading...</p>
       </main>
     )
   }
@@ -100,7 +111,6 @@ export default function EditCharacterPage() {
 
         <form onSubmit={handleSave} className="flex flex-col gap-5">
 
-          {/* Name */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium">Character Name <span className="text-red-400">*</span></label>
             <input
@@ -112,7 +122,6 @@ export default function EditCharacterPage() {
             />
           </div>
 
-          {/* Lore */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium">Lore / ประวัติตัวละคร</label>
             <textarea
@@ -125,7 +134,6 @@ export default function EditCharacterPage() {
             <p className="text-xs text-gray-400 text-right">{form.lore.length}/5000</p>
           </div>
 
-          {/* Ref Sheet URL */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium">Ref Sheet URL</label>
             <input
@@ -145,7 +153,6 @@ export default function EditCharacterPage() {
             )}
           </div>
 
-          {/* Tags */}
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium">Tags</label>
             <input
@@ -166,7 +173,6 @@ export default function EditCharacterPage() {
             )}
           </div>
 
-          {/* Visibility */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">การมองเห็น</label>
             <div className="flex gap-3">

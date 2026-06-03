@@ -26,46 +26,18 @@ export default async function Navbar() {
         <Link href="/" className="font-semibold text-lg tracking-tight text-purple-600">
           ARIN
         </Link>
-        
+
         {/* Center nav links */}
         <div className="hidden md:flex items-center gap-6">
-          <Link
-            href="/commissions"
-            className="text-sm text-gray-500 hover:text-gray-800 transition-colors"
-          >
+          <Link href="/commissions" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
             Explore
           </Link>
         </div>
 
-        {/* Right side */}
+        {/* Right side — NavbarClient จัดการ logged-in/out UI เองทั้งหมด */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
-
-          {user && profile ? (
-            <>
-              <Link
-                href="/dashboard/upload"
-                className="text-sm bg-purple-600 text-white px-4 py-1.5 rounded-full hover:bg-purple-700 transition-colors"
-              >
-                + Upload
-              </Link>
-
-              {/* Avatar dropdown — client component */}
-              <NavbarClient profile={profile} />
-            </>
-          ) : (
-            <>
-              <Link href="/login" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100">
-                login
-              </Link>
-              <Link
-                href="/signup"
-                className="text-sm bg-purple-600 text-white px-4 py-1.5 rounded-full hover:bg-purple-700 transition-colors"
-              >
-                sign up
-              </Link>
-            </>
-          )}
+          <NavbarClient profile={profile} />
         </div>
 
       </div>

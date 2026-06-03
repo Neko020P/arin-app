@@ -149,7 +149,7 @@ export default async function PublicCharacterPage({
         {artworks.length > 0 && (
           <div>
             <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-4">
-              ปรากฏใน {artworks.length} ผลงาน
+              Appears in {artworks.length} artworks
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {artworks.map((artwork: any) => (
@@ -183,7 +183,7 @@ export default async function PublicCharacterPage({
 
         {artworks.length === 0 && (
           <div className="border-2 border-dashed border-gray-200 rounded-2xl py-12 text-center">
-            <p className="text-gray-400 text-sm">ยังไม่มีผลงานที่มี character นี้</p>
+            <p className="text-gray-400 text-sm">No artworks available with this character.</p>
           </div>
         )}
 

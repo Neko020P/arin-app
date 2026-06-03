@@ -58,13 +58,13 @@ export default async function CommissionsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-medium">Commissions</h1>
-            <p className="text-sm text-gray-400 mt-1">จัดการ listing และ orders</p>
+            <p className="text-sm text-gray-400 mt-1">Manage listing and orders</p>
           </div>
           <Link
             href="/dashboard/commissions/new"
             className="bg-purple-600 text-white text-sm px-5 py-2 rounded-full hover:bg-purple-700 transition-colors"
           >
-            + สร้าง Listing
+            + Create Listing
           </Link>
         </div>
 
@@ -84,7 +84,7 @@ export default async function CommissionsPage() {
           </div>
           <div className="bg-purple-50 text-purple-600 rounded-2xl p-4">
             <p className="text-2xl font-medium">${totalRevenue.toFixed(2)}</p>
-            <p className="text-xs mt-0.5 opacity-70">รายได้รวม</p>
+            <p className="text-xs mt-0.5 opacity-70">Total Revenue</p>
           </div>
         </div>
 
@@ -119,19 +119,19 @@ export default async function CommissionsPage() {
                     href={`/dashboard/commissions/${l.id}`}
                     className="text-xs text-purple-600 hover:underline shrink-0"
                   >
-                    จัดการ →
+                    Manage →
                   </Link>
                 </div>
               ))}
             </div>
           ) : (
             <div className="bg-white rounded-2xl py-12 text-center shadow-sm">
-              <p className="text-gray-400 text-sm mb-3">ยังไม่มี listing</p>
+              <p className="text-gray-400 text-sm mb-3">No listings available</p>
               <Link
                 href="/dashboard/commissions/new"
                 className="text-sm text-purple-600 hover:underline"
               >
-                สร้าง listing แรก →
+                Create your first listing →
               </Link>
             </div>
           )}
@@ -140,10 +140,10 @@ export default async function CommissionsPage() {
         {/* Requests / Orders */}
         <div>
           <h2 className="font-medium mb-3">
-            Orders ที่เข้ามา
+            Incoming Requests
             {pendingCount > 0 && (
               <span className="ml-2 text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded-full">
-                {pendingCount} ใหม่
+                {pendingCount} new
               </span>
             )}
           </h2>
@@ -182,7 +182,7 @@ export default async function CommissionsPage() {
                           href={`/dashboard/commissions/requests/${r.id}`}
                           className="text-xs text-purple-600 hover:underline"
                         >
-                          ดูรายละเอียด →
+                          View Details →
                         </Link>
                       </td>
                     </tr>
@@ -192,7 +192,7 @@ export default async function CommissionsPage() {
             </div>
           ) : (
             <div className="bg-white rounded-2xl py-12 text-center shadow-sm">
-              <p className="text-gray-400 text-sm">ยังไม่มี order เข้ามา</p>
+              <p className="text-gray-400 text-sm">No incoming requests</p>
             </div>
           )}
         </div>
