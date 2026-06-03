@@ -57,8 +57,8 @@ export default async function ExploreCommissionsPage() {
           <h1 className="text-3xl font-medium mb-2">Explore Commissions</h1>
           <p className="text-gray-500 text-sm">
             {openCount > 0
-              ? `${openCount} listing เปิดรับอยู่ตอนนี้`
-              : 'ยังไม่มี listing ที่เปิดรับ'
+              ? `${openCount} listings are currently open for orders`
+              : 'No listings are currently open for orders'
             }
           </p>
         </div>
@@ -136,12 +136,12 @@ export default async function ExploreCommissionsPage() {
                       <span className="text-sm font-medium text-purple-600">
                         {l.price
                           ? `${l.currency ?? 'USD'} ${l.price}`
-                          : 'ติดต่อสอบถาม'
+                          : 'Contact for pricing'
                         }
                       </span>
                       <div className="flex items-center gap-2 text-xs text-gray-400">
                         {l.turnaround_days && (
-                          <span>{l.turnaround_days} วัน</span>
+                          <span>{l.turnaround_days} days</span>
                         )}
                         {l.slots > 0 && (
                           <span>{l.slots} slots</span>
@@ -157,7 +157,7 @@ export default async function ExploreCommissionsPage() {
         ) : (
           <div className="py-24 text-center">
             <p className="text-4xl mb-4">🎨</p>
-            <p className="text-gray-400">ยังไม่มี commission listing ที่เปิดรับอยู่</p>
+            <p className="text-gray-400">No commission listings are currently open for orders.</p>
           </div>
         )}
 

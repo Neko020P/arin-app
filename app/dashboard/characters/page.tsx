@@ -33,13 +33,13 @@ export default async function CharactersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-medium">Characters</h1>
-            <p className="text-sm text-gray-400 mt-1">ตัวละครและ lore ของคุณ</p>
+            <p className="text-sm text-gray-400 mt-1">Your characters and lore</p>
           </div>
           <Link
             href="/dashboard/characters/new"
             className="bg-purple-600 text-white text-sm px-5 py-2 rounded-full hover:bg-purple-700 transition-colors"
           >
-            + สร้าง Character
+            + Create Character
           </Link>
         </div>
 
@@ -47,7 +47,7 @@ export default async function CharactersPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-purple-50 text-purple-600 rounded-2xl p-4">
             <p className="text-2xl font-medium">{total}</p>
-            <p className="text-xs mt-0.5 opacity-70">ทั้งหมด</p>
+            <p className="text-xs mt-0.5 opacity-70">Total</p>
           </div>
           <div className="bg-green-50 text-green-600 rounded-2xl p-4">
             <p className="text-2xl font-medium">{pub}</p>

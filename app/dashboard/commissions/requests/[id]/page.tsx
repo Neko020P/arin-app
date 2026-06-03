@@ -81,7 +81,7 @@ export default async function RequestDetailPage({
           href="/dashboard/commissions"
           className="text-sm text-gray-400 hover:text-gray-600 w-fit"
         >
-          ← กลับ
+          ← Back to Commissions
         </Link>
 
         {/* Header */}

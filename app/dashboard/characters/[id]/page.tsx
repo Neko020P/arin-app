@@ -45,7 +45,7 @@ export default async function CharacterDetailPage({
           href="/dashboard/characters"
           className="text-sm text-gray-400 hover:text-gray-600 w-fit"
         >
-          ← กลับ
+          ← Back to Characters
         </Link>
 
         {/* Header */}
@@ -86,7 +86,7 @@ export default async function CharacterDetailPage({
               )}
 
               <p className="text-xs text-gray-400">
-                สร้างเมื่อ {new Date(character.created_at).toLocaleDateString('th-TH', {
+                Created on {new Date(character.created_at).toLocaleDateString('en-EN', {
                   day: 'numeric', month: 'long', year: 'numeric'
                 })}
               </p>
@@ -109,7 +109,7 @@ export default async function CharacterDetailPage({
         {/* Artworks ที่มี character นี้ */}
         {artworks && artworks.length > 0 && (
           <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="font-medium mb-4">ปรากฏใน {artworks.length} ผลงาน</h2>
+            <h2 className="font-medium mb-4">Appears in {artworks.length} artworks</h2>
             <div className="grid grid-cols-4 gap-2">
               {artworks.map((row: any) => {
                 const artwork = row.artworks

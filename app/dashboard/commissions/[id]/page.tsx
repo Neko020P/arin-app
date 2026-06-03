@@ -61,7 +61,7 @@ export default async function CommissionListingPage({
           href="/dashboard/commissions"
           className="text-sm text-gray-400 hover:text-gray-600 w-fit"
         >
-          ← กลับ
+          ← Back to Commissions
         </Link>
 
         {/* Listing detail */}
@@ -115,7 +115,7 @@ export default async function CommissionListingPage({
 
           {/* Public link */}
           <div className="mt-4 pt-4 border-t">
-            <p className="text-xs text-gray-400 mb-1">ลิงก์สำหรับลูกค้า</p>
+            <p className="text-xs text-gray-400 mb-1">Public Link</p>
             {/* <code className="text-xs text-purple-600 bg-purple-50 px-3 py-1.5 rounded-lg block">
               /commission/{listing.id}
             </code> */}
@@ -168,7 +168,7 @@ export default async function CommissionListingPage({
                           href={`/dashboard/commissions/requests/${r.id}`}
                           className="text-xs text-purple-600 hover:underline"
                         >
-                          ดูรายละเอียด →
+                          View Details →
                         </Link>
                       </td>
                     </tr>
@@ -178,7 +178,7 @@ export default async function CommissionListingPage({
             </div>
           ) : (
             <div className="bg-white rounded-2xl py-12 text-center shadow-sm">
-              <p className="text-gray-400 text-sm">ยังไม่มี order สำหรับ listing นี้</p>
+              <p className="text-gray-400 text-sm">No orders yet for this listing.</p>
             </div>
           )}
         </div>

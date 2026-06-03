@@ -40,7 +40,7 @@ export default function ListingActions({
         disabled={loading}
         className="border rounded-lg py-2.5 text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
       >
-        {isOpen ? '🔴 ปิดรับ Commission' : '🟢 เปิดรับ Commission'}
+        {isOpen ? '🔴 Close Commission' : '🟢 Open Commission'}
       </button>
       <button
         onClick={handleDelete}

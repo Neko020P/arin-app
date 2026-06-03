@@ -75,32 +75,32 @@ export default function NewCharacterPage() {
       <div className="max-w-lg mx-auto">
 
         <div className="mb-8">
-          <h1 className="text-2xl font-medium">สร้าง Character ใหม่</h1>
-          <p className="text-sm text-gray-400 mt-1">กรอกข้อมูลและ lore ของตัวละคร</p>
+          <h1 className="text-2xl font-medium">Create New Character</h1>
+          <p className="text-sm text-gray-400 mt-1">Fill in the details and lore of your character</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
           {/* Name */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">ชื่อตัวละคร <span className="text-red-400">*</span></label>
+            <label className="text-sm font-medium">Character Name <span className="text-red-400">*</span></label>
             <input
               type="text"
               required
               value={form.name}
               onChange={e => set('name', e.target.value)}
-              placeholder="เช่น Aria Moonwhisper"
+              placeholder="e.g., Aria Moonwhisper"
               className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
             />
           </div>
 
           {/* Lore */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Lore / ประวัติตัวละคร</label>
+            <label className="text-sm font-medium">Lore / Character Background</label>
             <textarea
               value={form.lore}
               onChange={e => set('lore', e.target.value)}
-              placeholder="เล่าเรื่องราว บุคลิก ความเป็นมา หรือ world ของตัวละคร..."
+              placeholder="Tell the story, personality, background, or world of your character..."
               rows={6}
               maxLength={5000}
               className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400 resize-none"
@@ -126,7 +126,7 @@ export default function NewCharacterPage() {
                 onError={e => (e.currentTarget.style.display = 'none')}
               />
             )}
-            <p className="text-xs text-gray-400">ใส่ URL รูป ref sheet ของตัวละคร</p>
+            <p className="text-xs text-gray-400">Enter the URL of your character's reference sheet</p>
           </div>
 
           {/* Tags */}
@@ -136,7 +136,7 @@ export default function NewCharacterPage() {
               type="text"
               value={form.tags}
               onChange={e => set('tags', e.target.value)}
-              placeholder="oc, fantasy, demon — คั่นด้วยจุลภาค"
+              placeholder="oc, fantasy, demon — separated by commas"
               className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
             />
             {form.tags && (
@@ -152,7 +152,7 @@ export default function NewCharacterPage() {
 
           {/* Visibility */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">การมองเห็น</label>
+            <label className="text-sm font-medium">Visibility</label>
             <div className="flex gap-3">
               <button
                 type="button"
@@ -179,8 +179,8 @@ export default function NewCharacterPage() {
             </div>
             <p className="text-xs text-gray-400">
               {form.is_public
-                ? 'ทุกคนเห็น character นี้ได้'
-                : 'เฉพาะคุณเท่านั้นที่เห็น'
+                ? 'Everyone can see this character'
+                : 'Only you can see this character'
               }
             </p>
           </div>

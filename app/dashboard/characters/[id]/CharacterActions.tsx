@@ -49,7 +49,7 @@ export default function CharacterActions({
         disabled={loading}
         className="border rounded-lg py-2.5 text-sm hover:bg-gray-50 disabled:opacity-50 transition-colors"
       >
-        {isPublic ? '🔒 เปลี่ยนเป็น Private' : '🌐 เปลี่ยนเป็น Public'}
+        {isPublic ? '🔒 Make Private' : '🌐 Make Public'}
       </button>
 
       <Link
@@ -64,7 +64,7 @@ export default function CharacterActions({
         target="_blank"
         className="border rounded-lg py-2.5 text-sm text-center hover:bg-gray-50 transition-colors"
       >
-        🌐 ดู Public Page
+        🌐 View Public Page
       </Link>
 
       <button

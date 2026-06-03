@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   const totalArtworks = artworks?.length ?? 0
   const publishedArtworks = artworks?.filter(a => a.status === 'published').length ?? 0
   const draftArtworks = artworks?.filter(a => a.status === 'draft').length ?? 0
-  const openCommissions = commissions?.filter(c => c.status === 'open').length ?? 0
+  const openCommissions = commissions?.filter(c => c.is_open).length ?? 0 //const openCommissions = commissions?.filter(c => c.status === 'open').length ?? 0
   const inProgressCommissions = commissions?.filter(c => c.status === 'in_progress').length ?? 0
   const totalRevenue = commissions
     ?.filter(c => c.status === 'completed')
@@ -44,7 +44,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-5xl mx-auto flex flex-col gap-8">
+      <div className="max-w-7xl mx-auto flex flex-col gap-8">
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -66,10 +66,10 @@ export default async function DashboardPage() {
 
         {/* Stats cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard label="ผลงานทั้งหมด" value={totalArtworks} sub={`${publishedArtworks} published`} color="purple" />
-          <StatCard label="Draft" value={draftArtworks} sub="รอเผยแพร่" color="gray" />
-          <StatCard label="Commission เปิดรับ" value={openCommissions} sub={`${inProgressCommissions} กำลังทำ`} color="blue" />
-          <StatCard label="รายได้รวม" value={`$${totalRevenue.toFixed(2)}`} sub="จาก commission" color="green" />
+          <StatCard label=" artworks" value={totalArtworks} sub={`${publishedArtworks} published`} color="purple" />
+          <StatCard label="Draft" value={draftArtworks} sub="Pending publication" color="gray" />
+          <StatCard label="Open Commissions" value={openCommissions} sub={`${inProgressCommissions} in progress`} color="blue" />
+          <StatCard label="Total Revenue" value={`$${totalRevenue.toFixed(2)}`} sub="from commissions" color="green" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -82,7 +82,7 @@ export default async function DashboardPage() {
                 href={`/profile/${profile.username}`}
                 className="text-xs text-purple-600 hover:underline"
               >
-                ดูทั้งหมด →
+                View All →
               </Link>
             </div>
 
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
                   href={`/profile/${profile.username}`}
                   className="flex-1 text-center text-xs bg-purple-50 text-purple-600 rounded-lg py-1.5 hover:bg-purple-100 transition-colors"
                 >
-                  ดูโปรไฟล์
+                  View Public Page
                 </Link>
               </div>
             </div>
@@ -187,7 +187,7 @@ export default async function DashboardPage() {
                     ? 'bg-green-50 text-green-600'
                     : 'bg-gray-100 text-gray-400'
                 }`}>
-                  {openCommissions > 0 ? 'เปิดรับ' : 'ปิดรับ'}
+                  {openCommissions > 0 ? 'Open' : 'Closed'}
                 </span>
               </div>
 
@@ -255,10 +255,10 @@ function StatCard({
 
 function statusLabel(status: string) {
   const map: Record<string, string> = {
-    open:        'เปิดรับ',
-    in_progress: 'กำลังทำ',
-    completed:   'เสร็จแล้ว',
-    cancelled:   'ยกเลิก',
+    open:        'Open',
+    in_progress: 'In Progress',
+    completed:   'Completed',
+    cancelled:   'Cancelled',
   }
   return map[status] ?? status
 }

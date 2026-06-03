@@ -76,21 +76,21 @@ export default function NewCommissionPage() {
       <div className="max-w-lg mx-auto">
 
         <div className="mb-8">
-          <h1 className="text-2xl font-medium">สร้าง Commission Listing</h1>
-          <p className="text-sm text-gray-400 mt-1">ประกาศรับงานให้ลูกค้าเห็นในโปรไฟล์ของคุณ</p>
+          <h1 className="text-2xl font-medium">Create New Commission Listing</h1>
+          <p className="text-sm text-gray-400 mt-1">Announce your commission availability for customers to see in your profile</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
           {/* Title */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">ชื่อ Listing <span className="text-red-400">*</span></label>
+            <label className="text-sm font-medium">Listing Title <span className="text-red-400">*</span></label>
             <input
               type="text"
               required
               value={form.title}
               onChange={e => set('title', e.target.value)}
-              placeholder="เช่น Full Body Illustration, Chibi Character"
+              placeholder="e.g., Full Body Illustration, Chibi Character"
               className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
             />
           </div>

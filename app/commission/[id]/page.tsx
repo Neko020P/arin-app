@@ -182,15 +182,15 @@ export default async function PublicCommissionPage({
             ) : (
               <div className="bg-gray-50 border border-dashed rounded-2xl p-8 text-center">
                 <p className="text-2xl mb-3">🔴</p>
-                <p className="font-medium text-gray-600 mb-1">ปิดรับ Commission</p>
+                <p className="font-medium text-gray-600 mb-1">Commission Closed</p>
                 <p className="text-sm text-gray-400">
-                  artist ยังไม่เปิดรับงานในขณะนี้
+                  artist did not open this commission for orders. You can check out their profile for any other open listings or updates.
                 </p>
                 <Link
                   href={`/profile/${artist.username}`}
                   className="inline-block mt-4 text-sm text-purple-600 hover:underline"
                 >
-                  ดูโปรไฟล์ {artist.display_name || artist.username}
+                  View Public Page {artist.display_name || artist.username}
                 </Link>
               </div>
             )}

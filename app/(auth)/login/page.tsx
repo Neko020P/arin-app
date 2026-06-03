@@ -2,11 +2,12 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [email, setEmail] = useState('')
@@ -19,17 +20,29 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError(error.message)
       setLoading(false)
-    } else {
-      router.push('/dashboard')
+      return
     }
+
+    // ถ้ามี ?next= ให้กลับไปหน้านั้นก่อน
+    const next = searchParams.get('next')
+    if (next) {
+      router.push(next)
+      return
+    }
+
+    // ไม่มี next → ไปหน้า profile ของตัวเอง
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('user_id', data.user.id)
+      .single()
+
+    router.push(profile?.username ? `/profile/${profile.username}` : '/dashboard')
   }
 
   return (
@@ -60,9 +73,7 @@ export default function LoginPage() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-red-500">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
 
           <button
             type="submit"
