@@ -24,34 +24,25 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+  const { pathname } = request.nextUrl
 
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  // ไม่แตะ auth callback
+  if (pathname.startsWith('/auth/')) return response
+
+  if (!user && pathname.startsWith('/dashboard')) {
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('next', request.nextUrl.pathname)
+    loginUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
-  if (
-    user &&
-    (request.nextUrl.pathname.startsWith('/login') ||
-      request.nextUrl.pathname.startsWith('/signup'))
-  ) {
-    // ดึง username จาก profile แล้ว redirect ไปหน้า profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('user_id', user.id)
-      .single()
-    const destination = profile?.username ? `/profile/${profile.username}` : '/dashboard'
-    return NextResponse.redirect(new URL(destination, request.url))
+  if (user && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
+    return NextResponse.redirect(new URL('/auth/callback', request.url))
   }
 
   return response
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 }

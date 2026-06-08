@@ -2,11 +2,10 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
 export default function LoginPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
 
@@ -20,8 +19,6 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const next = searchParams.get('next') ?? ''
-
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
@@ -30,12 +27,13 @@ export default function LoginPage() {
       return
     }
 
-    // redirect ผ่าน server เพื่อให้ cookie sync ก่อน
-    const destination = next
+    const next = searchParams.get('next') ?? ''
+    const callbackUrl = next
       ? `/auth/callback?next=${encodeURIComponent(next)}`
       : `/auth/callback`
 
-    router.push(destination)
+    // full reload เพื่อให้ cookie sync ก่อน server render
+    window.location.replace(callbackUrl)
   }
 
   return (

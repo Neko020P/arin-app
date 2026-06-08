@@ -14,12 +14,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // ถ้ามี next param ให้ไปหน้านั้นเลย
   if (next) {
     return NextResponse.redirect(new URL(next, request.url))
   }
 
-  // ไปหน้า profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('username')
