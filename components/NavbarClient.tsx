@@ -18,8 +18,23 @@ export default function NavbarClient({ profile: initialProfile }: { profile: Pro
   const router = useRouter()
   const supabase = createClient()
 
-  // ฟัง auth state change → refresh ข้อมูล profile ทันที
+  // sync profile จาก session ปัจจุบันทันทีตอน mount (ครอบคลุม production cookie delay)
   useEffect(() => {
+    async function syncProfile() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setProfile(null); return }
+      if (initialProfile) return // server ส่งมาแล้ว ไม่ต้อง fetch ซ้ำ
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url')
+        .eq('user_id', user.id)
+        .single()
+      if (data) { setProfile(data); router.refresh() }
+    }
+    syncProfile()
+
+    // ฟัง auth state change สำหรับ sign out
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         const { data } = await supabase
@@ -27,8 +42,7 @@ export default function NavbarClient({ profile: initialProfile }: { profile: Pro
           .select('username, display_name, avatar_url')
           .eq('user_id', session.user.id)
           .single()
-        setProfile(data)
-        router.refresh()
+        if (data) { setProfile(data); router.refresh() }
       } else if (event === 'SIGNED_OUT') {
         setProfile(null)
         router.refresh()
