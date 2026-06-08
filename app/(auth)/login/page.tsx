@@ -20,7 +20,9 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    const next = searchParams.get('next') ?? ''
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError(error.message)
@@ -28,21 +30,12 @@ export default function LoginPage() {
       return
     }
 
-    // ถ้ามี ?next= ให้กลับไปหน้านั้นก่อน
-    const next = searchParams.get('next')
-    if (next) {
-      router.push(next)
-      return
-    }
+    // redirect ผ่าน server เพื่อให้ cookie sync ก่อน
+    const destination = next
+      ? `/auth/callback?next=${encodeURIComponent(next)}`
+      : `/auth/callback`
 
-    // ไม่มี next → ไปหน้า profile ของตัวเอง
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('user_id', data.user.id)
-      .single()
-
-    router.push(profile?.username ? `/profile/${profile.username}` : '/dashboard')
+    router.push(destination)
   }
 
   return (
