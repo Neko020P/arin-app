@@ -65,6 +65,9 @@ export default function RoomClient({
     social: initialStats.social ?? 80,
   })
 
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   const [liveStats, setLiveStats] = useState<Stats>(() =>
     calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated)
   )
@@ -123,10 +126,10 @@ export default function RoomClient({
   const badge = PERSONALITY_BADGE[personality] ?? PERSONALITY_BADGE['friendly']
 
   const STATS_CONFIG = [
-    { key: 'hunger' as const, label: 'Tummy', icon: '🍞', color: '#fb923c' },
-    { key: 'energy' as const, label: 'Energy', icon: '⚡', color: '#facc15' },
-    { key: 'happiness' as const, label: 'Mood', icon: '🌸', color: '#f472b6' },
-    { key: 'social' as const, label: 'Social', icon: '💬', color: '#60a5fa' },
+    { key: 'hunger' as const, label: 'Tummy', color: '#fb923c', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg> },
+    { key: 'energy' as const, label: 'Energy', color: '#facc15', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+    { key: 'happiness' as const, label: 'Mood', color: '#f472b6', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> },
+    { key: 'social' as const, label: 'Social', color: '#60a5fa', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
   ]
 
   const SETTINGS_TABS: { id: SettingsTab; label: string; icon: string }[] = [
@@ -333,14 +336,14 @@ export default function RoomClient({
           {/* Stats */}
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', gap: 13 }}>
             <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase' }}>Status</span>
-            {STATS_CONFIG.map(({ key, label, icon, color }) => {
+            {mounted && STATS_CONFIG.map(({ key, label, icon, color }) => {
               const val = Math.round(liveStats[key] ?? 0)
               const low = val < 25
               return (
                 <div key={key}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                     <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <span style={{ fontSize: 12 }}>{icon}</span>
+                      <span style={{ color: color, opacity: 0.85 }}>{icon}</span>
                       {label}
                     </span>
                     <span style={{ color: low ? color : 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: low ? 600 : 400, transition: 'color .3s' }}>{val}</span>
