@@ -80,14 +80,21 @@ export default function ActionPanel({
   const STORAGE_KEY = `action_cooldowns_${characterId}`
 
   const [lastUsed, setLastUsed] = useState<Record<string, number>>({})
+  const [tick, setTick] = useState(0)  // force re-render ทุกวิเพื่ออัปเดต cooldown
 
-  // โหลด cooldown จาก localStorage หลัง mount เท่านั้น (ป้องกัน SSR hydration mismatch)
+  // โหลด cooldown จาก localStorage หลัง mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) setLastUsed(JSON.parse(raw))
     } catch {}
   }, [STORAGE_KEY])
+
+  // tick ทุก 1 วิเพื่อให้ remaining นับถอยหลังได้
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
   const [loading, setLoading] = useState<string | null>(null)
 
   const customZones = zones.filter(z => z.zone_type.startsWith('custom') && (z as any).custom_data)
