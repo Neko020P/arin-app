@@ -45,6 +45,8 @@ type Props = {
   onVisitorLeave: (characterId: string) => void
   bgColor: string
   customSpeechText?: string | null
+  preparingAction?: string | null
+  onTriggerAction?: (action: string) => void
 }
 
 export default function RoomCanvas({
@@ -52,6 +54,7 @@ export default function RoomCanvas({
   pendingAction, onActionComplete,
   moodSprites, personality, isOwner, onZonesChange,
   visitors, customSpeechText, onVisitorLeave, bgColor,
+  preparingAction, onTriggerAction,
   editMode, onEditModeChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -160,7 +163,7 @@ export default function RoomCanvas({
         />
 
         {/* Character */}
-        <IsoCharacter
+          <IsoCharacter
           spriteUrl={spriteUrl}
           moodSpriteUrl={moodSpriteUrl}
           stats={stats}
@@ -172,8 +175,9 @@ export default function RoomCanvas({
           originX={originX}
           originY={originY}
           pendingAction={pendingAction}
-          zones={zones.map(z => ({ zone_type: z.zone_type, col: z.col ?? 1, row: z.row ?? 1 }))}
-          onArrive={(action) => setLastAction(action)}
+          zones={zones.map(z => ({ zone_type: z.zone_type, col: z.col ?? 1, row: z.row ?? 1, size_level: z.size_level }))}
+          preparingAction={preparingAction}
+          onArrive={(action) => { setLastAction(action); onTriggerAction?.(action) }}
           onActionComplete={() => { setLastAction(null); onActionComplete() }}
           onPosChange={setCharPos}
           containerRef={containerRef}

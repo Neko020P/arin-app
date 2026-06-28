@@ -6,14 +6,10 @@ export type Stats = {
 }
 
 export const DECAY_RATES: Record<keyof Stats, number> = {
-  hunger: 500,  // test
-  happiness: 500,  // test
-  energy: 500,  // test
-  social: 300,
-  // hunger: 10,
-  // happiness: 5,
-  // energy: 4,
-  // social: 3,
+  hunger: 120,
+  happiness: 80,
+  energy: 80,
+  social: 40,
 }
 
 export const ACTION_EFFECTS: Record<string, Partial<Stats>> = {
@@ -30,7 +26,18 @@ export const SOCIAL_EFFECTS = {
 }
 
 export function calcCurrentStats(saved: Stats, lastUpdated: string): Stats {
-  const hours = (Date.now() - new Date(lastUpdated).getTime()) / 3_600_000
+  const parsed = new Date(lastUpdated)
+  const timestamp = parsed.getTime()
+  if (!lastUpdated || Number.isNaN(timestamp)) {
+    return {
+      hunger: clamp(saved.hunger),
+      happiness: clamp(saved.happiness),
+      energy: clamp(saved.energy),
+      social: clamp(saved.social ?? 80),
+    }
+  }
+
+  const hours = Math.max(0, (Date.now() - timestamp) / 3_600_000)
   return {
     hunger: clamp(saved.hunger - DECAY_RATES.hunger * hours),
     happiness: clamp(saved.happiness - DECAY_RATES.happiness * hours),

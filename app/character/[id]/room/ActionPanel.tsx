@@ -86,7 +86,15 @@ export default function ActionPanel({
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) setLastUsed(JSON.parse(raw))
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        const coerced: Record<string, number> = {}
+        for (const k of Object.keys(parsed)) {
+          const v = parsed[k]
+          coerced[k] = typeof v === 'number' ? v : Number(v) || 0
+        }
+        setLastUsed(coerced)
+      }
     } catch {}
   }, [STORAGE_KEY])
 
@@ -111,6 +119,13 @@ export default function ActionPanel({
     isBusyRef.current = true
     setLoading(actionId)
     onTriggerAction(actionId)
+
+    // optimistic: บันทึกเวลาใช้งานทันทีเพื่อป้องกัน UI ค้างถ้า network ช้า
+    setLastUsed(prev => {
+      const updated = { ...prev, [actionId]: Date.now() }
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {}
+      return updated
+    })
 
     // safety net: บังคับ reset ภายใน 8 วิ ไม่ว่า network จะ hang หรือ throw อะไรก็ตาม
     const safetyTimer = setTimeout(() => {
@@ -161,17 +176,17 @@ export default function ActionPanel({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative', zIndex: 210 }}>
       {/* Default actions */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         {ACTIONS.map(({ id, label, icon, zone, cooldown, color, bg, activeBg, border }) => {
           const elapsed = (Date.now() - (lastUsed[id] ?? 0)) / 1000
           const onCooldown = elapsed < cooldown
-          const remaining = Math.ceil(cooldown - elapsed)
+          const remaining = Math.max(0, Math.ceil(cooldown - elapsed))
           const isLoading = loading === id
           const hasZone = zones.some(z => z.zone_type === zone)
           const disabled = onCooldown || !!loading || !hasZone
-          const pct = onCooldown ? ((cooldown - remaining) / cooldown) * 100 : 100
+          const pct = onCooldown ? Math.min(100, Math.max(0, (elapsed / cooldown) * 100)) : 100
 
           return (
             <button
@@ -181,6 +196,8 @@ export default function ActionPanel({
               title={!hasZone ? `ยังไม่มี ${zone} zone` : undefined}
               style={{
                 position: 'relative',
+                zIndex: 212,
+                pointerEvents: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -246,6 +263,7 @@ export default function ActionPanel({
                   position: 'absolute', inset: 0,
                   background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
                   animation: 'shimmer 1s infinite',
+                  pointerEvents: 'none',
                 }} />
               )}
             </button>
@@ -265,10 +283,10 @@ export default function ActionPanel({
             const id = z.zone_type
             const elapsed = (Date.now() - (lastUsed[id] ?? 0)) / 1000
             const onCooldown = elapsed < 60
-            const remaining = Math.ceil(60 - elapsed)
+            const remaining = Math.max(0, Math.ceil(60 - elapsed))
             const isLoading = loading === id
             const disabled = onCooldown || !!loading
-            const pct = onCooldown ? ((60 - remaining) / 60) * 100 : 100
+            const pct = onCooldown ? Math.min(100, Math.max(0, (elapsed / 60) * 100)) : 100
 
             return (
               <button
@@ -324,8 +342,9 @@ export default function ActionPanel({
                 {isLoading && (
                   <div style={{
                     position: 'absolute', inset: 0,
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
-                    animation: 'shimmer 1s infinite',
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent)',
+                      animation: 'shimmer 1s infinite',
+                      pointerEvents: 'none',
                   }} />
                 )}
               </button>

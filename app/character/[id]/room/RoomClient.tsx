@@ -1,10 +1,10 @@
 'use client'
 import { createClient } from '@/lib/supabase/client'
-import { useEffect, useRef, useState } from 'react'
-import { calcCurrentStats } from '@/lib/stats'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { calcCurrentStats, applyAction } from '@/lib/stats'
 import type { Stats } from '@/lib/stats'
-import RoomCanvas from './RoomCanvas'
 import RoomEditor from './RoomEditor'
+import RoomCanvas from './RoomCanvas'
 import ActionPanel from './ActionPanel'
 import MoodSpriteUpload from './MoodSpriteUpload'
 import { Personality } from '@/lib/personality'
@@ -61,36 +61,62 @@ export default function RoomClient({
   initialStats, initialZones, initialCharacter,
   isOwner, currentBgUrl, currentSpriteUrl,
 }: Props) {
-  const savedStatsRef = useRef<Stats & { last_updated: string }>({
+  const initialStatsSnapshot = {
     ...initialStats,
     social: initialStats.social ?? 80,
-  })
+    last_updated: initialStats.last_updated ?? new Date().toISOString(),
+  }
+
+  const savedStatsRef = useRef<Stats & { last_updated: string }>(initialStatsSnapshot)
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  const supabase = useMemo(() => createClient(), [])
 
   const [liveStats, setLiveStats] = useState<Stats>(() =>
     calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated)
   )
 
-  // อัปเดต stats realtime ทุก 5 วิ และ save ลง DB ด้วย
   useEffect(() => {
-    const tick = async () => {
-      const next = calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated)
-      const now = new Date().toISOString()
-      savedStatsRef.current = { ...next, last_updated: now }
-      setLiveStats(next)
-      await supabase.from('character_stats').update({
-        hunger: Math.round(next.hunger),
-        happiness: Math.round(next.happiness),
-        energy: Math.round(next.energy),
-        social: Math.round(next.social),
-        last_updated: now,
-      }).eq('character_id', characterId)
-    }
-    const id = setInterval(tick, 5_000)
-    return () => clearInterval(id)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    const interval = setInterval(() => {
+      setLiveStats(calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      ;(async () => {
+        const current = calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated)
+        if (
+          current.hunger === savedStatsRef.current.hunger &&
+          current.energy === savedStatsRef.current.energy &&
+          current.happiness === savedStatsRef.current.happiness &&
+          current.social === savedStatsRef.current.social
+        ) {
+          return
+        }
+
+        const now = new Date().toISOString()
+        savedStatsRef.current = { ...current, last_updated: now }
+        setLiveStats(current)
+
+        const { error } = await supabase.from('character_stats').update({
+          hunger: Math.round(current.hunger),
+          happiness: Math.round(current.happiness),
+          energy: Math.round(current.energy),
+          social: Math.round(current.social),
+          last_updated: now,
+        }).eq('character_id', characterId)
+
+        if (error) {
+          console.error('Failed to persist decayed stats', error.message)
+        }
+      })()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [characterId, supabase])
 
   function updateLiveStats(next: Stats) {
     const now = new Date().toISOString()
@@ -106,6 +132,15 @@ export default function RoomClient({
     (initialCharacter.personality as Personality) ?? 'friendly'
   )
   const [visitors, setVisitors] = useState<VisitorData[]>([])
+  const [autoLife, setAutoLife] = useState<boolean>(false)
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(`auto_life_${characterId}`) === '1'
+      setAutoLife(v)
+    } catch {}
+  }, [characterId])
+  const [preparingAction, setPreparingAction] = useState<string | null>(null)
+  const prepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [tab, setTab] = useState<Tab>('room')
   const [bgColor, setBgColor] = useState(initialCharacter.room_bg_color ?? '#302b63')
   const [chatText, setChatText] = useState<string | null>(null)
@@ -114,7 +149,6 @@ export default function RoomClient({
   const [showSettings, setShowSettings] = useState(false)
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('personality')
   const visitorTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
-  const supabase = createClient()
 
   const avatarUrl = initialCharacter.room_sprite_url ?? initialCharacter.ref_sheet_url ?? null
 
@@ -200,6 +234,48 @@ export default function RoomClient({
   function handleVisitorLeave(cid: string) {
     setVisitors(prev => prev.filter(v => v.characterId !== cid))
   }
+
+  // ---- auto-life: monitor stats and trigger prepare+action -----
+  useEffect(() => {
+    if (!autoLife) return
+    const LOW_THRESHOLD = 50
+    const check = () => {
+      if (preparingAction) return
+      const allLow =
+        liveStats.hunger < LOW_THRESHOLD &&
+        liveStats.energy < LOW_THRESHOLD &&
+        liveStats.happiness < LOW_THRESHOLD
+      if (!allLow) return
+
+      const candidates = [
+        { action: 'feed', value: liveStats.hunger, label: 'feed' },
+        { action: 'sleep', value: liveStats.energy, label: 'sleep' },
+        { action: 'play', value: liveStats.happiness, label: 'play' },
+      ]
+        .sort((a, b) => a.value - b.value)
+      const choice = candidates[0]
+
+      console.debug('[RoomClient] autoLife preparing', choice.action, 'stats', {
+        hunger: liveStats.hunger,
+        energy: liveStats.energy,
+        happiness: liveStats.happiness,
+      })
+      setPreparingAction(choice.action)
+      prepTimerRef.current = setTimeout(() => {
+        console.debug('[RoomClient] autoLife trigger', choice.action)
+        setPendingAction({ action: choice.action, ts: Date.now() })
+        setPreparingAction(null)
+      }, 2000)
+    }
+    check()
+    const id = setInterval(check, 3000)
+    return () => { clearInterval(id) }
+  }, [autoLife, liveStats, preparingAction])
+
+  // ensure prep timer cleared on unmount
+  useEffect(() => {
+    return () => { if (prepTimerRef.current) clearTimeout(prepTimerRef.current) }
+  }, [])
 
   async function handleZoneMove(id: string, col: number, row: number) {
     setZones(prev => prev.map(z => z.id === id ? { ...z, col, row } : z))
@@ -325,6 +401,32 @@ export default function RoomClient({
                 onZonesChange={handleZoneMove} visitors={visitors} onVisitorLeave={handleVisitorLeave}
                 bgColor={bgColor} customSpeechText={customSpeechText}
                 editMode={editMode} onEditModeChange={setEditMode}
+                preparingAction={preparingAction}
+                onTriggerAction={async (action: string) => {
+                  // apply action effects and persist, similar to ActionPanel.handleAction
+                  try {
+                    const base = savedStatsRef.current
+                    const next = applyAction(base, action)
+                    const now = new Date().toISOString()
+                    savedStatsRef.current = { ...next, last_updated: now }
+                    setLiveStats(next)
+                    await supabase.from('character_stats').update({
+                      hunger: Math.round(next.hunger),
+                      happiness: Math.round(next.happiness),
+                      energy: Math.round(next.energy),
+                      social: Math.round(next.social),
+                      last_updated: now,
+                    }).eq('character_id', characterId)
+                    // record memory for action
+                    fetch('/api/memory', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ characterId, action, characterName }),
+                    }).catch(() => {})
+                  } catch (err) {
+                    console.error('auto action failed', err)
+                  }
+                }}
               />
               <ChatBubble text={chatText} spriteUrl={spriteUrl} characterName={characterName} />
             </>
@@ -364,8 +466,10 @@ export default function RoomClient({
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', gap: 13 }}>
             <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase' }}>Status</span>
             {mounted && STATS_CONFIG.map(({ key, label, icon, color }) => {
-              const val = Math.round(liveStats[key] ?? 0)
-              const low = val < 25
+              const rawValue = liveStats[key] ?? 0
+              const displayValue = Number(rawValue.toFixed(1))
+              const percent = Math.max(0, Math.min(100, rawValue))
+              const low = rawValue < 25
               return (
                 <div key={key}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
@@ -373,10 +477,10 @@ export default function RoomClient({
                       <span style={{ color: color, opacity: 0.85 }}>{icon}</span>
                       {label}
                     </span>
-                    <span style={{ color: low ? color : 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: low ? 600 : 400, transition: 'color .3s' }}>{val}</span>
+                    <span style={{ color: low ? color : 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: low ? 600 : 400, transition: 'color .3s' }}>{displayValue}</span>
                   </div>
                   <div style={{ height: 4, background: 'rgba(255,255,255,0.07)', borderRadius: 99, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${val}%`, background: low ? color : `${color}99`, borderRadius: 99, transition: 'width .6s ease' }} />
+                    <div style={{ height: '100%', width: `${percent}%`, background: low ? color : `${color}99`, borderRadius: 99, transition: 'width .6s ease' }} />
                   </div>
                 </div>
               )
@@ -393,6 +497,13 @@ export default function RoomClient({
                 onTriggerAction={(action) => setPendingAction({ action, ts: Date.now() })}
                 onChatTrigger={(text) => setCustomSpeechText(text + '\u200B'.repeat(Date.now() % 100))}
               />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                <button onClick={() => { const v = !autoLife; setAutoLife(v); try { localStorage.setItem(`auto_life_${characterId}`, v ? '1' : '0') } catch {} }}
+                  style={{ padding: '6px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', background: autoLife ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.03)', color: autoLife ? '#22c55e' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 12 }}>
+                  Auto-life: {autoLife ? 'On' : 'Off'}
+                </button>
+                <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: 11 }}>Automatically prepare and act when stats are low</span>
+              </div>
             </div>
           )}
 
