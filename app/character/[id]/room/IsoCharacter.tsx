@@ -24,11 +24,12 @@ type Props = {
   originX: number
   originY: number
   pendingAction: { action: string; ts: number } | null
-  zones: { zone_type: string; col: number; row: number }[]
+  zones: { zone_type: string; col: number; row: number; size_level?: number }[]
   containerRef: React.RefObject<HTMLDivElement | null>
   onArrive: (action: string) => void
   onActionComplete: () => void
   onPosChange: (pos: GridPos) => void
+  preparingAction?: string | null
 }
 
 // ---- BFS ---------------------------------------------------------------
@@ -95,6 +96,49 @@ function buildOccupied(zones: { col: number; row: number; size_level?: number }[
   return occupied
 }
 
+function getZonePerimeterCells(zone: { col: number; row: number; size_level?: number }): GridPos[] {
+  const size = Math.min(3, Math.max(1, zone.size_level ?? 1))
+  const cells: GridPos[] = []
+
+  for (let c = zone.col; c < zone.col + size; c++) {
+    cells.push({ col: c, row: zone.row - 1 })
+    cells.push({ col: c, row: zone.row + size })
+  }
+  for (let r = zone.row; r < zone.row + size; r++) {
+    cells.push({ col: zone.col - 1, row: r })
+    cells.push({ col: zone.col + size, row: r })
+  }
+
+  return cells
+}
+
+function findNearestReachableZoneCell(
+  start: GridPos,
+  zone: { col: number; row: number; size_level?: number },
+  cols: number,
+  rows: number,
+  occupied: Set<string>,
+): { target: GridPos; path: GridPos[] } | null {
+  const candidates = getZonePerimeterCells(zone)
+    .filter(p =>
+      p.col >= 0 && p.col < cols &&
+      p.row >= 0 && p.row < rows &&
+      !occupied.has(`${p.col},${p.row}`)
+    )
+    .sort((a, b) =>
+      (Math.abs(a.col - start.col) + Math.abs(a.row - start.row)) -
+      (Math.abs(b.col - start.col) + Math.abs(b.row - start.row))
+    )
+
+  for (const cand of candidates) {
+    const path = bfsPath(start, cand, cols, rows, occupied)
+    if (path.length > 0 || (start.col === cand.col && start.row === cand.row)) {
+      return { target: cand, path }
+    }
+  }
+  return null
+}
+
 function randomWalkableCell(cols: number, rows: number, occupied: Set<string>): GridPos {
   const candidates: GridPos[] = []
   for (let c = 0; c < cols; c++)
@@ -127,12 +171,24 @@ export default function IsoCharacter({
   gridCols, gridRows, tileW, tileH, originX, originY,
   pendingAction, zones, onArrive, onActionComplete, onPosChange,
   containerRef,
+  preparingAction,
 }: Props) {
   const [pos, setPos] = useState<GridPos>({ col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) })
   const [facing, setFacing] = useState<'left' | 'right'>('right')
   const [spriteLoaded, setSpriteLoaded] = useState(false)
   const [currentMode, setCurrentMode] = useState<'idle' | 'walking' | 'acting'>('idle')
   const [currentAction, setCurrentAction] = useState<string | null>(null)
+  const [isPreparing, setIsPreparing] = useState(false)
+  const [debugLines, setDebugLines] = useState<string[]>([])
+  const [debugVisible, setDebugVisible] = useState(false)
+
+  function addDebug(msg: string) {
+    setDebugLines(prev => [...prev.slice(-7), `${new Date().toLocaleTimeString()}: ${msg}`])
+  }
+
+  useEffect(() => {
+    addDebug('[IsoCharacter] mounted')
+  }, [])
 
   const posRef = useRef<GridPos>({ col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) })
   const modeRef = useRef<CharacterMode>({ type: 'wander' })
@@ -158,31 +214,93 @@ export default function IsoCharacter({
 
     const zoneType = ACTION_ZONE[pendingAction.action]
     const zone = zonesRef.current.find(z => z.zone_type === zoneType)
+    // debug: log pending action and zone discovery
+    try {
+      console.debug('[IsoCharacter] pendingAction', pendingAction.action, 'zoneType', zoneType, 'foundZone', !!zone, zone)
+      addDebug(`[IsoCharacter] pendingAction ${pendingAction.action} zoneType ${zoneType} foundZone ${!!zone}`)
+    } catch {}
 
     // หา cell ติดกับ zone ที่เดินได้ใกล้ character ที่สุด
     const occupied = buildOccupied(zonesRef.current)
     let target: GridPos
     if (zone) {
-      const adjacent = [
-        { col: zone.col - 1, row: zone.row },
-        { col: zone.col + 1, row: zone.row },
-        { col: zone.col, row: zone.row - 1 },
-        { col: zone.col, row: zone.row + 1 },
-      ].filter(p =>
-        p.col >= 0 && p.col < gridCols &&
-        p.row >= 0 && p.row < gridRows &&
-        !occupied.has(`${p.col},${p.row}`)
-      )
-      adjacent.sort((a, b) =>
-        (Math.abs(a.col - posRef.current.col) + Math.abs(a.row - posRef.current.row)) -
-        (Math.abs(b.col - posRef.current.col) + Math.abs(b.row - posRef.current.row))
-      )
-      target = adjacent[0] ?? { col: zone.col, row: zone.row }
+      const result = findNearestReachableZoneCell(posRef.current, zone, gridCols, gridRows, occupied)
+      if (result) {
+        targetRef.current = result.target
+        const path = result.path
+        try {
+          console.debug('[IsoCharacter] target zone reachable', targetRef.current, 'path length', path.length)
+          addDebug(`[IsoCharacter] target zone reachable ${targetRef.current.col},${targetRef.current.row} len ${path.length}`)
+        } catch {}
+        modeRef.current = {
+          type: 'walking_to',
+          path,
+          onArrive: () => {
+            modeRef.current = { type: 'acting', action: pendingAction.action }
+            onArrive(pendingAction.action)
+            setTimeout(() => {
+              modeRef.current = { type: 'wander' }
+              wanderPathRef.current = []
+              targetRef.current = null
+              onActionComplete()
+            }, 1500)
+          },
+        }
+        return
+      }
+      target = { col: zone.col, row: zone.row }
     } else {
       target = { col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) }
     }
+    targetRef.current = target
 
-    const path = bfsPath(posRef.current, target, gridCols, gridRows, occupied)
+    const path = bfsPath(posRef.current, targetRef.current, gridCols, gridRows, occupied)
+    try {
+      console.debug('[IsoCharacter] computed path length', path.length, 'target', targetRef.current)
+      addDebug(`[IsoCharacter] computed path length ${path.length} target ${targetRef.current.col},${targetRef.current.row}`)
+    } catch {}
+
+    // If path is empty but target is not current position, try to find a nearby reachable cell
+    if (path.length === 0 && !(posRef.current.col === targetRef.current.col && posRef.current.row === targetRef.current.row)) {
+      try { console.debug('[IsoCharacter] empty path — attempting to find nearby reachable cell') } catch {}
+      const MAX_RADIUS = Math.max(gridCols, gridRows)
+      let foundPath: GridPos[] | null = null
+      let foundTarget: GridPos | null = null
+      outer: for (let r = 1; r <= MAX_RADIUS; r++) {
+        for (let dx = -r; dx <= r; dx++) {
+          for (let dy = -r; dy <= r; dy++) {
+            const cand = { col: targetRef.current.col + dx, row: targetRef.current.row + dy }
+            if (cand.col < 0 || cand.col >= gridCols || cand.row < 0 || cand.row >= gridRows) continue
+            if (occupied.has(`${cand.col},${cand.row}`)) continue
+            const p = bfsPath(posRef.current, cand, gridCols, gridRows, occupied)
+            if (p.length > 0 || (posRef.current.col === cand.col && posRef.current.row === cand.row)) {
+              foundPath = p
+              foundTarget = cand
+              break outer
+            }
+          }
+        }
+      }
+      if (foundPath && foundTarget) {
+        targetRef.current = foundTarget
+        try { console.debug('[IsoCharacter] found alternative path length', foundPath.length, 'target', foundTarget); addDebug(`[IsoCharacter] found alternative path length ${foundPath.length}`) } catch {}
+        modeRef.current = {
+          type: 'walking_to',
+          path: foundPath,
+          onArrive: () => {
+            modeRef.current = { type: 'acting', action: pendingAction.action }
+            onArrive(pendingAction.action)
+            setTimeout(() => {
+              modeRef.current = { type: 'wander' }
+              wanderPathRef.current = []
+              targetRef.current = null
+              onActionComplete()
+            }, 1500)
+          },
+        }
+        return
+      }
+    }
 
     modeRef.current = {
       type: 'walking_to',
@@ -292,6 +410,29 @@ export default function IsoCharacter({
   const imgRef = useRef<HTMLImageElement>(null)
   useEffect(() => { if (imgRef.current?.complete) setSpriteLoaded(true) }, [])
 
+  // show a brief preparing visual when parent signals preparingAction
+  useEffect(() => {
+    setIsPreparing(!!preparingAction)
+    if (preparingAction) {
+      addDebug(`[IsoCharacter] preparingAction ${preparingAction}`)
+      setDebugVisible(true)
+    }
+  }, [preparingAction])
+
+  useEffect(() => {
+    if (pendingAction) {
+      addDebug(`[IsoCharacter] pendingAction prop ${pendingAction.action} ts ${pendingAction.ts}`)
+      setDebugVisible(true)
+    } else {
+      addDebug('[IsoCharacter] pendingAction prop null')
+    }
+  }, [pendingAction?.action, pendingAction?.ts])
+
+  useEffect(() => {
+    if (!pendingAction) return
+    addDebug(`[IsoCharacter] pendingAction effect fired for ${pendingAction.action} ts ${pendingAction.ts}`)
+  }, [pendingAction?.action, pendingAction?.ts])
+
   const screen = isoToScreen(pos.col, pos.row, tileW, tileH, originX, originY)
   const rect = containerRef.current?.getBoundingClientRect()
   const svgW = (gridCols + gridRows) * (tileW / 2)
@@ -323,6 +464,7 @@ export default function IsoCharacter({
   }
 
   return (
+    <>
     <div
       style={{
         position: 'absolute',
@@ -356,10 +498,32 @@ export default function IsoCharacter({
             imageRendering: 'pixelated',
             animation: getAnimation(),
             transformOrigin: 'bottom center',
-            filter: getFilter(mood, stats.energy),
+            filter: (isPreparing ? 'brightness(0.9) saturate(0.8)' : getFilter(mood, stats.energy)),
           }}
         />
+        {isPreparing && (
+          <div style={{ position: 'absolute', left: '50%', top: '-18%', transform: 'translateX(-50%)', fontSize: 18 }}>
+            {preparingAction === 'sleep' ? '😴' : preparingAction === 'feed' ? '🍖' : preparingAction === 'play' ? '🎾' : '…'}
+          </div>
+        )}
       </div>
     </div>
+    <>
+      <div style={{ position: 'fixed', left: 12, bottom: 12, zIndex: 999999, pointerEvents: 'auto' }}>
+        <button onClick={() => setDebugVisible(v => !v)} style={{ width: 36, height: 36, borderRadius: 18, background: 'rgba(0,0,0,0.7)', color: '#fff', border: 'none', cursor: 'pointer' }}>{debugVisible ? '×' : 'Dbg'}</button>
+      </div>
+      {debugVisible && (
+        <div style={{ position: 'fixed', left: 12, bottom: 60, width: 360, maxHeight: 300, overflow: 'auto', background: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: 12, padding: 8, borderRadius: 8, zIndex: 999999, pointerEvents: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <div style={{ fontWeight: 600 }}>IsoCharacter Debug</div>
+            <div style={{ opacity: 0.7, fontSize: 11 }}>{new Date().toLocaleTimeString()}</div>
+          </div>
+          {debugLines.length === 0 ? <div style={{ opacity: 0.7 }}>no logs</div> : debugLines.slice().reverse().map((l, i) => (
+            <div key={i} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l}</div>
+          ))}
+        </div>
+      )}
+    </>
+    </>
   )
 }
