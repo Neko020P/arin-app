@@ -89,8 +89,17 @@ function bfsPath(
   return []
 }
 
-function buildOccupied(zones?: { col: number; row: number }[]): Set<string> {
-  return new Set((zones ?? []).map(z => `${z.col},${z.row}`))
+function buildOccupied(zones?: { col: number; row: number; size_level?: number }[]): Set<string> {
+  const occupied = new Set<string>()
+  for (const z of zones ?? []) {
+    const size = Math.min(3, Math.max(1, z.size_level ?? 1))
+    for (let dc = 0; dc < size; dc++) {
+      for (let dr = 0; dr < size; dr++) {
+        occupied.add(`${z.col + dc},${z.row + dr}`)
+      }
+    }
+  }
+  return occupied
 }
 
 // หา entry point ที่ไม่ occupied

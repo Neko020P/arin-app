@@ -92,6 +92,17 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
       .eq('id', zone.id)
   }
 
+  async function updateSize(type: string, size: number) {
+    const zone = getZone(type)
+    if (!zone) return
+
+    onZonesChange(zones.map(z => z.zone_type === type ? { ...z, size_level: size } : z))
+
+    await supabase.from('room_zones')
+      .update({ size_level: size })
+      .eq('id', zone.id)
+  }
+
   return (
     <div className="w-full max-w-sm">
       <button
@@ -100,7 +111,7 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
                    rounded-xl border border-white/10 text-white/50 text-sm
                    hover:bg-white/5 transition-colors"
       >
-        <span>🏠 Main Furniture</span>
+        <span>🏠 จัดห้อง</span>
         <span>{expanded ? '▲' : '▼'}</span>
       </button>
 
@@ -155,7 +166,25 @@ export default function ZoneEditor({ characterId, zones = [], onZonesChange }: P
                       )}
                     </div>
 
-
+                    {/* Size selector */}
+                    <div>
+                      <label className="text-xs text-white/40 mb-1 block">ขนาด (Grid Size)</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[1, 2, 3].map(level => (
+                          <button
+                            key={level}
+                            onClick={() => updateSize(type, level)}
+                            className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                              (zone.size_level ?? 1) === level
+                                ? 'bg-purple-500/30 border-purple-400 text-white'
+                                : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'
+                            }`}
+                          >
+                            {level}×{level}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </>
                 )}
               </div>

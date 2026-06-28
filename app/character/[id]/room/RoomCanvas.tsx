@@ -37,7 +37,9 @@ type Props = {
   onActionComplete: () => void
   moodSprites: Record<string, string>
   personality: Personality
-  isOwner: boolean   // ← เพิ่ม
+  isOwner: boolean
+  editMode: boolean
+  onEditModeChange: (v: boolean) => void
   onZonesChange: (id: string, col: number, row: number) => void
   visitors: VisitorData[]
   onVisitorLeave: (characterId: string) => void
@@ -49,15 +51,12 @@ export default function RoomCanvas({
   spriteUrl, bgUrl, stats, zones,
   pendingAction, onActionComplete,
   moodSprites, personality, isOwner, onZonesChange,
-  visitors,
-  customSpeechText,
-  onVisitorLeave,
-  bgColor,
+  visitors, customSpeechText, onVisitorLeave, bgColor,
+  editMode, onEditModeChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [lastAction, setLastAction] = useState<string | null>(null)
   const [charPos, setCharPos] = useState<GridPos>({ col: 4, row: 3 })
-  const [editMode, setEditMode] = useState(false)
   const [highlightCell, setHighlightCell] = useState<{ col: number; row: number } | null>(null)
 
   const moodSpriteUrl = getCurrentMoodSprite(stats, moodSprites)
@@ -217,32 +216,7 @@ export default function RoomCanvas({
       </div>
 
       {/* Edit Mode Button */}
-      {isOwner && (
-        <button
-          onClick={() => setEditMode(e => !e)}
-          style={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            zIndex: 50,
-            background: editMode ? 'rgba(120,180,255,0.3)' : 'rgba(0,0,0,0.4)',
-            border: editMode ? '1px solid rgba(120,180,255,0.6)' : '1px solid rgba(255,255,255,0.2)',
-            color: 'white',
-            padding: '4px 12px',
-            borderRadius: 8,
-            fontSize: 12,
-            cursor: 'pointer',
-            backdropFilter: 'blur(4px)',
-          }}
-        >
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {editMode
-              ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Save</>
-              : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit room</>
-            }
-          </span>
-        </button>
-      )}
+
 
       <style>{`
   @keyframes breathe {

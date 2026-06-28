@@ -28,6 +28,7 @@ type Zone = {
   image_url: string | null
   col: number
   row: number
+  size_level?: number
   custom_data: CustomData | null
 }
 
@@ -79,6 +80,11 @@ export default function CustomFurniturePanel({ characterId, zones, onZonesChange
     onZonesChange(zones.map(z => z.id === zoneId ? { ...z, custom_data: data } : z))
   }
 
+  async function handleUpdateSize(zoneId: string, size: number) {
+    await supabase.from('room_zones').update({ size_level: size }).eq('id', zoneId)
+    onZonesChange(zones.map(z => z.id === zoneId ? { ...z, size_level: size } : z))
+  }
+
   async function handleDelete(zoneId: string) {
     await supabase.from('room_zones').delete().eq('id', zoneId)
     onZonesChange(zones.filter(z => z.id !== zoneId))
@@ -99,6 +105,7 @@ export default function CustomFurniturePanel({ characterId, zones, onZonesChange
               key={zone.id}
               zone={zone}
               onUpdate={data => handleUpdateCustomData(zone.id, data)}
+              onUpdateSize={size => handleUpdateSize(zone.id, size)}
               onDelete={() => handleDelete(zone.id)}
             />
           ))}
@@ -119,13 +126,15 @@ export default function CustomFurniturePanel({ characterId, zones, onZonesChange
   )
 }
 
-function CustomZoneConfig({ zone, onUpdate, onDelete }: {
+function CustomZoneConfig({ zone, onUpdate, onUpdateSize, onDelete }: {
   zone: Zone
   onUpdate: (data: CustomData) => void
+  onUpdateSize: (size: number) => void
   onDelete: () => void
 }) {
   const [data, setData] = useState<CustomData>(zone.custom_data ?? { ...DEFAULT_CUSTOM })
   const [expanded, setExpanded] = useState(false)
+  const currentSize = zone.size_level ?? 1
 
   function update(partial: Partial<CustomData>) {
     const next = { ...data, ...partial }
@@ -157,6 +166,26 @@ function CustomZoneConfig({ zone, onUpdate, onDelete }: {
             <label className="text-xs text-white/40 mb-1 block">Name</label>
             <input value={data.label} onChange={e => update({ label: e.target.value })}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-purple-400" />
+          </div>
+
+          {/* Size */}
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">ขนาด (Grid Size)</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {[1, 2, 3].map(level => (
+                <button
+                  key={level}
+                  onClick={() => onUpdateSize(level)}
+                  className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    currentSize === level
+                      ? 'bg-purple-500/30 border-purple-400 text-white'
+                      : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'
+                  }`}
+                >
+                  {level}×{level}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Stat effects */}

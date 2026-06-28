@@ -29,6 +29,7 @@ export type RoomZone = {
   width: number
   col: number
   row: number
+  size_level?: number  // 1 = 1x1, 2 = 2x2, 3 = 3x3
   custom_data?: any
 }
 
@@ -109,6 +110,7 @@ export default function RoomClient({
   const [bgColor, setBgColor] = useState(initialCharacter.room_bg_color ?? '#302b63')
   const [chatText, setChatText] = useState<string | null>(null)
   const [customSpeechText, setCustomSpeechText] = useState<string | null>(null)
+  const [editMode, setEditMode] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('personality')
   const visitorTimeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -201,7 +203,10 @@ export default function RoomClient({
 
   async function handleZoneMove(id: string, col: number, row: number) {
     setZones(prev => prev.map(z => z.id === id ? { ...z, col, row } : z))
-    await supabase.from('room_zones').update({ col, row }).eq('id', id)
+    const { error } = await supabase.from('room_zones').update({ col, row }).eq('id', id)
+    if (error) {
+      console.error('Failed to save zone position:', error.message)
+    }
   }
 
   if (!spriteUrl) {
@@ -279,6 +284,27 @@ export default function RoomClient({
 
           <div style={{ flex: 1 }} />
 
+          {/* Edit room button */}
+          {isOwner && (
+            <button
+              onClick={() => setEditMode(e => !e)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                width: '100%', padding: '10px 14px', borderRadius: 12,
+                border: editMode ? '1px solid rgba(120,180,255,0.5)' : '1px solid rgba(255,255,255,0.07)',
+                background: editMode ? 'rgba(120,180,255,0.15)' : 'rgba(255,255,255,0.03)',
+                color: editMode ? 'rgba(120,180,255,0.9)' : 'rgba(255,255,255,0.45)',
+                fontSize: 12, cursor: 'pointer', letterSpacing: 0.2,
+                transition: 'all .15s', fontWeight: 500,
+              }}
+            >
+              {editMode
+                ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Done</>
+                : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit room</>
+              }
+            </button>
+          )}
+
           {/* Owner tools */}
           {isOwner && (
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -298,6 +324,7 @@ export default function RoomClient({
                 moodSprites={moodSprites} personality={personality} isOwner={isOwner}
                 onZonesChange={handleZoneMove} visitors={visitors} onVisitorLeave={handleVisitorLeave}
                 bgColor={bgColor} customSpeechText={customSpeechText}
+                editMode={editMode} onEditModeChange={setEditMode}
               />
               <ChatBubble text={chatText} spriteUrl={spriteUrl} characterName={characterName} />
             </>

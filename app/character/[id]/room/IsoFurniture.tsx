@@ -63,13 +63,21 @@ export default function IsoFurniture({
     }, [containerRef])
 
     function toSVGCoord(clientX: number, clientY: number, rect: DOMRect): { x: number; y: number } {
-        const scaleX = rect.width / canvasW
+        // ต้องเป็น inverse ของ isoToCSS ทุกประการ (ใช้ preserveAspectRatio xMidYMid meet เหมือนกัน)
+        const svgW = (gridCols + gridRows) * (tileW / 2)
         const svgH = (gridCols + gridRows) * (tileH / 2)
-        const scaleY = rect.height / (svgH + tileH)
+        const scale = Math.min(rect.width / svgW, rect.height / svgH)
+        const offsetX = (rect.width - svgW * scale) / 2
+        const offsetY = (rect.height - svgH * scale) / 2
+        const vbX = originX - svgW / 2
+        const vbY = originY - tileH / 2
 
-        // แปลงเป็น canvas coordinate ตรงๆ ไม่บวก viewBox offset
-        const x = (clientX - rect.left) / scaleX
-        const y = (clientY - rect.top) / scaleY
+        const cssX = clientX - rect.left
+        const cssY = clientY - rect.top
+
+        // inverse: cssX = (x - vbX) * scale + offsetX  →  x = (cssX - offsetX) / scale + vbX
+        const x = (cssX - offsetX) / scale + vbX
+        const y = (cssY - offsetY) / scale + vbY
 
         return { x, y }
     }
@@ -96,7 +104,6 @@ export default function IsoFurniture({
                 const { col, row } = screenToGrid(x, y, tileW, tileH, originX, originY)
                 const clampedCol = Math.max(0, Math.min(gridCols - 1, col))
                 const clampedRow = Math.max(0, Math.min(gridRows - 1, row))
-                console.log('mouseup col/row:', { col, row, clampedCol, clampedRow })
                 onZoneMove(draggingRef.current, clampedCol, clampedRow)
             }
             draggingRef.current = null
@@ -149,7 +156,18 @@ export default function IsoFurniture({
             {zones.map(zone => {
                 const col = zone.col ?? 1
                 const row = zone.row ?? 1
-                const { x, y } = isoToCSS(col, row)
+                const size = Math.min(3, Math.max(1, zone.size_level ?? 1))
+
+                // จุด anchor ของวัตถุคือ cell มุมบนซ้าย (col, row)
+                // ถ้า size > 1 จุด center ของพื้นที่ที่ครอบ (สำหรับ isometric) คือ
+                // มุมล่างของ cell ที่ลึกที่สุด (col + size - 1, row + size - 1)
+                const anchorCol = col + size - 1
+                const anchorRow = row + size - 1
+                const { x, y } = isoToCSS(anchorCol, anchorRow)
+
+                // ขนาดภาพ scale ตาม size_level: แต่ละ level ใหญ่ขึ้นตามจำนวน tile ที่ครอบ
+                const baseHeight = tileH * 2.5
+                const renderHeight = baseHeight + (size - 1) * tileH * 1.6
 
                 return (
                     <div
@@ -161,10 +179,17 @@ export default function IsoFurniture({
                             left: x,
                             top: y,
                             transform: 'translate(-50%, -100%)',
-                            height: tileH * 2.5,
+                            height: renderHeight,
                             zIndex: (() => {
-                              const furDepth = (col + row) * 10
-                              if (!charPos || isActing) return furDepth + 1
+                              // ใช้ depth ของ cell ที่ลึกที่สุดในพื้นที่ที่ครอบ (anchor cell)
+                              const furDepth = (anchorCol + anchorRow) * 10
+                              if (!charPos) return furDepth + 1
+
+                              // เช็คว่าตัวละครอยู่ใน "พื้นที่ขยาย" รอบวัตถุไหม (รวม footprint ของวัตถุ + 1 cell รอบ)
+                              const inRangeCol = charPos.col >= col - 1 && charPos.col <= col + size
+                              const inRangeRow = charPos.row >= row - 1 && charPos.row <= row + size
+                              if (!(inRangeCol && inRangeRow)) return furDepth + 1
+
                               const charDepth = (charPos.col + charPos.row) * 10
                               return furDepth >= charDepth ? furDepth + 1 : furDepth - 1
                             })(),
@@ -193,7 +218,7 @@ export default function IsoFurniture({
                             />
                         ) : (
                             <div style={{
-                                fontSize: tileH * 1.5,
+                                fontSize: tileH * 1.5 * size,
                                 lineHeight: 1,
                                 filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
                                 pointerEvents: 'none',
@@ -216,7 +241,7 @@ export default function IsoFurniture({
                                 borderRadius: 4,
                                 whiteSpace: 'nowrap',
                             }}>
-                                ✥ Drag to move {zone.zone_type}
+                                ✥ Drag to move {zone.zone_type} ({size}x{size})
                             </div>
                         )}
                     </div>
