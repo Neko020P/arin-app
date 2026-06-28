@@ -1,3 +1,5 @@
+//app/dashboard/page.tsx
+
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -8,7 +10,6 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // ดึง profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -17,14 +18,12 @@ export default async function DashboardPage() {
 
   if (!profile) redirect('/profile/edit')
 
-  // ดึง artworks ทั้งหมด (รวม draft)
   const { data: artworks } = await supabase
     .from('artworks')
     .select('*')
     .eq('artist_id', profile.id)
     .order('created_at', { ascending: false })
 
-  // ดึง commissions
   const { data: commissions } = await supabase
     .from('commissions')
     .select('*')
@@ -32,15 +31,22 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(5)
 
-  // คำนวณ stats
+  // ดึง commission_requests เพื่อคำนวณ revenue ให้ตรงกับหน้า Commissions
+  const { data: requests } = await supabase
+    .from('commission_requests')
+    .select('price, status')
+    .eq('artist_id', profile.id)
+
   const totalArtworks = artworks?.length ?? 0
   const publishedArtworks = artworks?.filter(a => a.status === 'published').length ?? 0
   const draftArtworks = artworks?.filter(a => a.status === 'draft').length ?? 0
-  const openCommissions = commissions?.filter(c => c.is_open).length ?? 0 //const openCommissions = commissions?.filter(c => c.status === 'open').length ?? 0
-  const inProgressCommissions = commissions?.filter(c => c.status === 'in_progress').length ?? 0
-  const totalRevenue = commissions
-    ?.filter(c => c.status === 'completed')
-    .reduce((sum, c) => sum + (c.price ?? 0), 0) ?? 0
+  const openCommissions = commissions?.filter(c => c.is_open).length ?? 0
+  const inProgressCommissions = requests?.filter(r => r.status === 'in_progress').length ?? 0
+
+  // คำนวณจาก commission_requests เหมือนหน้า Commissions page
+  const totalRevenue = requests
+    ?.filter(r => r.status === 'completed')
+    .reduce((sum, r) => sum + (r.price ?? 0), 0) ?? 0
 
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4">
@@ -50,17 +56,17 @@ export default async function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-medium">
-              สวัสดี, {profile.display_name || profile.username} 👋
+              {profile.display_name || profile.username} 👋
             </h1>
             <p className="text-sm text-gray-400 mt-1">
-              นี่คือภาพรวมทั้งหมดของคุณ
+              Here's a quick overview of your profile and recent activity.
             </p>
           </div>
           <Link
             href="/dashboard/upload"
             className="bg-purple-600 text-white text-sm px-5 py-2 rounded-full hover:bg-purple-700 transition-colors"
           >
-            + Upload ผลงาน
+            + Upload Artwork
           </Link>
         </div>
 
@@ -77,7 +83,7 @@ export default async function DashboardPage() {
           {/* Artworks section */}
           <div className="md:col-span-2 bg-white rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-medium">ผลงานล่าสุด</h2>
+              <h2 className="font-medium">Recent Artworks</h2>
               <Link
                 href={`/profile/${profile.username}`}
                 className="text-xs text-purple-600 hover:underline"
@@ -101,7 +107,6 @@ export default async function DashboardPage() {
                       className="object-cover transition-transform group-hover:scale-105"
                       sizes="(max-width: 768px) 33vw, 20vw"
                     />
-                    {/* Status badge */}
                     {artwork.status !== 'published' && (
                       <div className="absolute top-1.5 left-1.5">
                         <span className="text-xs bg-black/60 text-white px-2 py-0.5 rounded-full">
@@ -109,7 +114,6 @@ export default async function DashboardPage() {
                         </span>
                       </div>
                     )}
-                    {/* Hover */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end p-2 opacity-0 group-hover:opacity-100">
                       <p className="text-white text-xs truncate">{artwork.title}</p>
                     </div>
@@ -118,12 +122,12 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="border-2 border-dashed border-gray-200 rounded-xl py-12 flex flex-col items-center gap-3">
-                <p className="text-gray-400 text-sm">ยังไม่มีผลงาน</p>
+                <p className="text-gray-400 text-sm">You haven't uploaded any artworks yet.</p>
                 <Link
                   href="/dashboard/upload"
                   className="text-sm text-purple-600 hover:underline"
                 >
-                  Upload ผลงานแรกของคุณ →
+                  Upload your first artwork →
                 </Link>
               </div>
             )}
@@ -159,7 +163,7 @@ export default async function DashboardPage() {
                   {profile.bio}
                 </p>
               ) : (
-                <p className="text-xs text-gray-300 mb-4">ยังไม่มี bio</p>
+                <p className="text-xs text-gray-300 mb-4">No bio available.</p>
               )}
 
               <div className="flex gap-2">
@@ -200,7 +204,7 @@ export default async function DashboardPage() {
                     >
                       <div className="min-w-0">
                         <p className="text-xs font-medium truncate">{c.title}</p>
-                        <p className="text-xs text-gray-400">{statusLabel(c.status)}</p>
+                        <p className="text-xs text-gray-400">{c.is_open ? 'Open' : 'Closed'}</p>
                       </div>
                       {c.price && (
                         <span className="text-xs text-gray-500 shrink-0 ml-2">
@@ -212,7 +216,7 @@ export default async function DashboardPage() {
                 </div>
               ) : (
                 <p className="text-xs text-gray-300 text-center py-4">
-                  ยังไม่มี commission
+                  You don't have any active commissions.
                 </p>
               )}
             </div>
@@ -225,12 +229,8 @@ export default async function DashboardPage() {
   )
 }
 
-// Stat card component
 function StatCard({
-  label,
-  value,
-  sub,
-  color,
+  label, value, sub, color,
 }: {
   label: string
   value: string | number
@@ -243,7 +243,6 @@ function StatCard({
     blue:   'bg-blue-50 text-blue-600',
     green:  'bg-green-50 text-green-600',
   }
-
   return (
     <div className={`rounded-2xl p-5 ${colors[color]}`}>
       <p className="text-2xl font-semibold">{value}</p>
@@ -251,14 +250,4 @@ function StatCard({
       <p className="text-xs opacity-60 mt-1">{sub}</p>
     </div>
   )
-}
-
-function statusLabel(status: string) {
-  const map: Record<string, string> = {
-    open:        'Open',
-    in_progress: 'In Progress',
-    completed:   'Completed',
-    cancelled:   'Cancelled',
-  }
-  return map[status] ?? status
 }

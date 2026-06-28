@@ -1,9 +1,13 @@
-//page.tsx 
+//page.tsx
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import RoomClient from './RoomClient'
 import CopyRoomLink from './CopyRoomLink'
+
+// บังคับให้หน้านี้ fetch ข้อมูลใหม่ทุกครั้ง ไม่ cache
+// (ถ้าไม่มีบรรทัดนี้ Next.js อาจ cache zones/stats เก่าไว้แล้ว refresh ไม่เห็นค่าใหม่)
+export const dynamic = 'force-dynamic'
 
 export default async function CharacterRoomPage({
   params,

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { applyAction, applyCustomAction } from '@/lib/stats'
 import type { Stats } from '@/lib/stats'
@@ -97,16 +97,34 @@ export default function ActionPanel({
   }, [])
   const [loading, setLoading] = useState<string | null>(null)
 
+  // เก็บ liveStats ปัจจุบันไว้ใน ref ป้องกัน stale closure ใน setTimeout
+  const liveStatsRef = useRef(liveStats)
+  useEffect(() => { liveStatsRef.current = liveStats }, [liveStats])
+
+  // กันกด action ซ้อนกัน (ปุ่มอื่นกดไม่ได้ระหว่าง action ใดๆ กำลังทำงาน)
+  const isBusyRef = useRef(false)
+
   const customZones = zones.filter(z => z.zone_type.startsWith('custom') && (z as any).custom_data)
 
   async function handleAction(actionId: string, customData?: CustomData) {
+    if (isBusyRef.current) return
+    isBusyRef.current = true
     setLoading(actionId)
     onTriggerAction(actionId)
 
-    setTimeout(async () => {
+    // safety net: บังคับ reset ภายใน 8 วิ ไม่ว่า network จะ hang หรือ throw อะไรก็ตาม
+    const safetyTimer = setTimeout(() => {
+      setLoading(null)
+      isBusyRef.current = false
+    }, 8000)
+
+    try {
+      await new Promise(res => setTimeout(res, 1500))
+
+      const baseStats = liveStatsRef.current
       const next = customData
-        ? applyCustomAction(liveStats, customData.stat_effects)
-        : applyAction(liveStats, actionId)
+        ? applyCustomAction(baseStats, customData.stat_effects)
+        : applyAction(baseStats, actionId)
 
       const { error } = await supabase
         .from('character_stats')
@@ -122,9 +140,9 @@ export default function ActionPanel({
       if (!error) {
         onUpdate(next)
         setLastUsed(prev => {
-          const next = { ...prev, [actionId]: Date.now() }
-          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
-          return next
+          const updated = { ...prev, [actionId]: Date.now() }
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {}
+          return updated
         })
         if (customData?.bubble_message) onChatTrigger?.(customData.bubble_message)
         fetch('/api/memory', {
@@ -133,8 +151,13 @@ export default function ActionPanel({
           body: JSON.stringify({ characterId, action: actionId, characterName }),
         }).catch(() => {})
       }
+    } catch {
+      // ไม่ทำอะไร — finally จัดการ reset
+    } finally {
+      clearTimeout(safetyTimer)
       setLoading(null)
-    }, 1500)
+      isBusyRef.current = false
+    }
   }
 
   return (
@@ -147,7 +170,7 @@ export default function ActionPanel({
           const remaining = Math.ceil(cooldown - elapsed)
           const isLoading = loading === id
           const hasZone = zones.some(z => z.zone_type === zone)
-          const disabled = onCooldown || isLoading || !hasZone
+          const disabled = onCooldown || !!loading || !hasZone
           const pct = onCooldown ? ((cooldown - remaining) / cooldown) * 100 : 100
 
           return (
@@ -244,7 +267,7 @@ export default function ActionPanel({
             const onCooldown = elapsed < 60
             const remaining = Math.ceil(60 - elapsed)
             const isLoading = loading === id
-            const disabled = onCooldown || isLoading
+            const disabled = onCooldown || !!loading
             const pct = onCooldown ? ((60 - remaining) / 60) * 100 : 100
 
             return (

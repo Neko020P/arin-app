@@ -54,7 +54,7 @@ export default function TransferAcceptClient({
         รับ Character
       </h1>
       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 24 }}>
-        <b style={{ color: 'white' }}>{fromUsername}</b> ต้องการโอน character ให้คุณ
+        <b style={{ color: 'white' }}>{fromUsername}</b> wants to transfer the character to you
       </p>
 
       {/* Character card */}
@@ -86,7 +86,7 @@ export default function TransferAcceptClient({
       </div>
 
       <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginBottom: 20 }}>
-        ⏰ link หมดอายุใน {expiresIn} ชั่วโมง
+        ⏰ link will expire in {expiresIn} hour{expiresIn !== 1 ? 's' : ''}
       </p>
 
       {error && (
