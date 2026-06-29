@@ -32,7 +32,9 @@ export default function EditProfilePage() {
   // โหลด profile ปัจจุบัน
   useEffect(() => {
     async function loadProfile() {
+      console.log('loadProfile start')
       const { data: { user } } = await supabase.auth.getUser()
+      console.log('user:', user)
       if (!user) return router.push('/login')
 
       const { data } = await supabase
@@ -40,6 +42,8 @@ export default function EditProfilePage() {
         .select('*')
         .eq('user_id', user.id)
         .single()
+
+      console.log('profile data:', data, 'error:', error)
 
       if (data) {
         setForm({
