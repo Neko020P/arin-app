@@ -56,7 +56,7 @@ export default async function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-medium">
-              {profile.display_name || profile.username} 👋
+              {profile.display_name || profile.username}
             </h1>
             <p className="text-sm text-gray-400 mt-1">
               Here's a quick overview of your profile and recent activity.

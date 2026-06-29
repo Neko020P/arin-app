@@ -47,6 +47,7 @@ type Props = {
     room_sprite_url?: string | null
     room_bg_color?: string | null
     chat_messages?: { id: string; text: string }[] | null
+    auto_life?: boolean | null
   }
   isOwner: boolean
   currentBgUrl: string | null
@@ -68,50 +69,82 @@ export default function RoomClient({
   }
 
   const savedStatsRef = useRef<Stats & { last_updated: string }>(initialStatsSnapshot)
+  // Tracks the last values actually written to the DB (rounded integers),
+  // so the sync timer can detect real drift without comparing floats.
+  const lastPersistedRef = useRef<Stats>({
+    hunger: Math.round(initialStatsSnapshot.hunger),
+    happiness: Math.round(initialStatsSnapshot.happiness),
+    energy: Math.round(initialStatsSnapshot.energy),
+    social: Math.round(initialStatsSnapshot.social ?? 80),
+  })
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
   const supabase = useMemo(() => createClient(), [])
 
-  const [liveStats, setLiveStats] = useState<Stats>(() =>
-    calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated)
-  )
+  // page.tsx already computed the correct decayed values and wrote them to DB
+  // with last_updated = now. Use those directly — no need to re-run calcCurrentStats
+  // which would introduce a small float offset vs what the DB actually stored.
+  const [liveStats, setLiveStats] = useState<Stats>({
+    hunger: initialStatsSnapshot.hunger,
+    happiness: initialStatsSnapshot.happiness,
+    energy: initialStatsSnapshot.energy,
+    social: initialStatsSnapshot.social,
+  })
 
   useEffect(() => {
     const interval = setInterval(() => {
+      // Always compute decay relative to savedStatsRef, which is updated
+      // each time an action or sync write resets the baseline.
       setLiveStats(calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated))
     }, 1000)
     return () => clearInterval(interval)
   }, [])
 
+  // Keep a ref to liveStats so the sync interval always reads the latest value
+  // without needing it in the dependency array (avoids recreating the interval).
+  const liveStatsRef = useRef<Stats>(liveStats)
+  useEffect(() => { liveStatsRef.current = liveStats }, [liveStats])
+
   useEffect(() => {
     const interval = setInterval(() => {
       ;(async () => {
-        const current = calcCurrentStats(savedStatsRef.current, savedStatsRef.current.last_updated)
+        const current = liveStatsRef.current
+        const persisted = lastPersistedRef.current
+
+        // Compare rounded integers — avoids false positives from float drift
+        const rH = Math.round(current.hunger)
+        const rHp = Math.round(current.happiness)
+        const rE = Math.round(current.energy)
+        const rS = Math.round(current.social)
+
         if (
-          current.hunger === savedStatsRef.current.hunger &&
-          current.energy === savedStatsRef.current.energy &&
-          current.happiness === savedStatsRef.current.happiness &&
-          current.social === savedStatsRef.current.social
+          rH === persisted.hunger &&
+          rHp === persisted.happiness &&
+          rE === persisted.energy &&
+          rS === persisted.social
         ) {
           return
         }
 
         const now = new Date().toISOString()
+        // Keep savedStatsRef in sync so calcCurrentStats stays accurate
         savedStatsRef.current = { ...current, last_updated: now }
-        setLiveStats(current)
 
         const { error } = await supabase.from('character_stats').update({
-          hunger: Math.round(current.hunger),
-          happiness: Math.round(current.happiness),
-          energy: Math.round(current.energy),
-          social: Math.round(current.social),
+          hunger: rH,
+          happiness: rHp,
+          energy: rE,
+          social: rS,
           last_updated: now,
         }).eq('character_id', characterId)
 
         if (error) {
           console.error('Failed to persist decayed stats', error.message)
+        } else {
+          // Only update lastPersistedRef on confirmed DB write
+          lastPersistedRef.current = { hunger: rH, happiness: rHp, energy: rE, social: rS }
         }
       })()
     }, 30000)
@@ -120,8 +153,19 @@ export default function RoomClient({
 
   function updateLiveStats(next: Stats) {
     const now = new Date().toISOString()
-    savedStatsRef.current = { ...next, last_updated: now }
-    setLiveStats(next)
+    // Store rounded values so the decay baseline in savedStatsRef exactly
+    // matches what ActionPanel wrote to the DB — prevents float drift.
+    const rounded: Stats = {
+      hunger: Math.round(next.hunger),
+      happiness: Math.round(next.happiness),
+      energy: Math.round(next.energy),
+      social: Math.round(next.social),
+    }
+    savedStatsRef.current = { ...rounded, last_updated: now }
+    setLiveStats(rounded)
+    // ActionPanel already wrote these values to DB — record them as persisted
+    // so the 30s sync timer doesn't immediately re-write the same values.
+    lastPersistedRef.current = rounded
   }
   const [zones, setZones] = useState<RoomZone[]>(initialZones)
   const [pendingAction, setPendingAction] = useState<{ action: string; ts: number } | null>(null)
@@ -132,13 +176,21 @@ export default function RoomClient({
     (initialCharacter.personality as Personality) ?? 'friendly'
   )
   const [visitors, setVisitors] = useState<VisitorData[]>([])
-  const [autoLife, setAutoLife] = useState<boolean>(false)
+  const [autoLife, setAutoLife] = useState<boolean>(initialCharacter.auto_life ?? false)
   useEffect(() => {
+    // Instant-paint from cache so the toggle doesn't flash off while the
+    // server value (initialCharacter.auto_life) is in transit, but the
+    // database — not localStorage — is the source of truth. If the two
+    // disagree, re-sync localStorage to match the DB.
     try {
-      const v = localStorage.getItem(`auto_life_${characterId}`) === '1'
-      setAutoLife(v)
+      const cached = localStorage.getItem(`auto_life_${characterId}`)
+      const dbValue = initialCharacter.auto_life ?? false
+      if (cached !== null && cached === '1' !== dbValue) {
+        localStorage.setItem(`auto_life_${characterId}`, dbValue ? '1' : '0')
+      }
+      setAutoLife(dbValue)
     } catch {}
-  }, [characterId])
+  }, [characterId, initialCharacter.auto_life])
   const [preparingAction, setPreparingAction] = useState<string | null>(null)
   const prepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [tab, setTab] = useState<Tab>('room')
@@ -235,12 +287,38 @@ export default function RoomClient({
     setVisitors(prev => prev.filter(v => v.characterId !== cid))
   }
 
+  async function handleAutoLifeToggle() {
+    const next = !autoLife
+    // Optimistic UI + cache update first...
+    setAutoLife(next)
+    try { localStorage.setItem(`auto_life_${characterId}`, next ? '1' : '0') } catch {}
+    // ...then persist to the database, which is the actual source of truth.
+    const { error } = await supabase
+      .from('characters')
+      .update({ auto_life: next })
+      .eq('id', characterId)
+    if (error) {
+      console.error('Failed to save auto-life setting:', error.message)
+      // Roll back on failure so the UI doesn't claim a state that isn't saved.
+      setAutoLife(!next)
+      try { localStorage.setItem(`auto_life_${characterId}`, !next ? '1' : '0') } catch {}
+    }
+  }
+
   // ---- auto-life: monitor stats and trigger prepare+action -----
   useEffect(() => {
     if (!autoLife) return
     const LOW_THRESHOLD = 50
     const check = () => {
-      if (preparingAction) return
+      // Don't queue a new action while one is already being prepared OR
+      // already walking/in-flight — pendingAction stays non-null from the
+      // moment it's set until onActionComplete fires after arrival. Without
+      // this guard, the 1s liveStats decay tick keeps re-running this effect,
+      // and since stats haven't changed yet (the action hasn't landed), it
+      // would keep re-queuing the SAME action with a new timestamp — which
+      // makes IsoCharacter restart the walk every time, so the character
+      // never actually arrives and the stat boost never gets saved.
+      if (preparingAction || pendingAction) return
       const allLow =
         liveStats.hunger < LOW_THRESHOLD &&
         liveStats.energy < LOW_THRESHOLD &&
@@ -270,7 +348,7 @@ export default function RoomClient({
     check()
     const id = setInterval(check, 3000)
     return () => { clearInterval(id) }
-  }, [autoLife, liveStats, preparingAction])
+  }, [autoLife, liveStats, preparingAction, pendingAction])
 
   // ensure prep timer cleared on unmount
   useEffect(() => {
@@ -403,28 +481,40 @@ export default function RoomClient({
                 editMode={editMode} onEditModeChange={setEditMode}
                 preparingAction={preparingAction}
                 onTriggerAction={async (action: string) => {
-                  // apply action effects and persist, similar to ActionPanel.handleAction
+                  // onTriggerAction fires via onArrive — the character has already
+                  // reached the zone. Write to DB immediately (no animation delay needed).
+                  console.debug('[RoomClient] onTriggerAction CALLED for', action, 'liveStatsRef at call time', liveStatsRef.current)
                   try {
-                    const base = savedStatsRef.current
-                    const next = applyAction(base, action)
-                    const now = new Date().toISOString()
-                    savedStatsRef.current = { ...next, last_updated: now }
-                    setLiveStats(next)
-                    await supabase.from('character_stats').update({
+                    const next = applyAction(liveStatsRef.current, action)
+                    const rounded: Stats = {
                       hunger: Math.round(next.hunger),
                       happiness: Math.round(next.happiness),
                       energy: Math.round(next.energy),
                       social: Math.round(next.social),
+                    }
+                    const now = new Date().toISOString()
+                    const { error: actionErr } = await supabase.from('character_stats').update({
+                      ...rounded,
                       last_updated: now,
                     }).eq('character_id', characterId)
-                    // record memory for action
+                    if (!actionErr) {
+                      console.debug('[RoomClient] onTriggerAction DB write OK', action, rounded)
+                      savedStatsRef.current = { ...rounded, last_updated: now }
+                      setLiveStats(rounded)
+                      lastPersistedRef.current = rounded
+                    } else {
+                      // This was previously swallowed entirely — if the write fails
+                      // (e.g. an RLS policy rejecting it), nothing was logged and the
+                      // stat silently never updated.
+                      console.error('[RoomClient] onTriggerAction DB write FAILED', action, actionErr)
+                    }
                     fetch('/api/memory', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ characterId, action, characterName }),
                     }).catch(() => {})
                   } catch (err) {
-                    console.error('auto action failed', err)
+                    console.error('[RoomClient] onTriggerAction threw', action, err)
                   }
                 }}
               />
@@ -498,7 +588,7 @@ export default function RoomClient({
                 onChatTrigger={(text) => setCustomSpeechText(text + '\u200B'.repeat(Date.now() % 100))}
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
-                <button onClick={() => { const v = !autoLife; setAutoLife(v); try { localStorage.setItem(`auto_life_${characterId}`, v ? '1' : '0') } catch {} }}
+                <button onClick={handleAutoLifeToggle}
                   style={{ padding: '6px 8px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', background: autoLife ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.03)', color: autoLife ? '#22c55e' : 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 12 }}>
                   Auto-life: {autoLife ? 'On' : 'Off'}
                 </button>

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import RoomClient from './RoomClient'
 import CopyRoomLink from './CopyRoomLink'
+import { calcCurrentStats } from '@/lib/stats'
 
 // บังคับให้หน้านี้ fetch ข้อมูลใหม่ทุกครั้ง ไม่ cache
 // (ถ้าไม่มีบรรทัดนี้ Next.js อาจ cache zones/stats เก่าไว้แล้ว refresh ไม่เห็นค่าใหม่)
@@ -46,6 +47,31 @@ export default async function CharacterRoomPage({
       .select()
       .single()
     stats = newStats
+  }
+
+  // Compute how much stats have decayed since last_updated, then immediately
+  // write the result back to the DB. This ensures the DB is always in sync
+  // with what the client sees — no drift possible on first load.
+  if (stats) {
+    const decayed = calcCurrentStats(stats, stats.last_updated)
+    const now = new Date().toISOString()
+
+    await supabase
+      .from('character_stats')
+      .update({
+        hunger: Math.round(decayed.hunger),
+        happiness: Math.round(decayed.happiness),
+        energy: Math.round(decayed.energy),
+        social: Math.round(decayed.social),
+        last_updated: now,
+      })
+      .eq('character_id', id)
+
+    // Pass the already-decayed values with last_updated = now to the client.
+    // RoomClient receives stats that are current as of this moment, so
+    // calcCurrentStats on the client will compute ~0 elapsed hours and show
+    // the same values the DB just stored.
+    stats = { ...stats, ...decayed, last_updated: now }
   }
 
   const { data: zones } = await supabase

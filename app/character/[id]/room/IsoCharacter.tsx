@@ -179,16 +179,6 @@ export default function IsoCharacter({
   const [currentMode, setCurrentMode] = useState<'idle' | 'walking' | 'acting'>('idle')
   const [currentAction, setCurrentAction] = useState<string | null>(null)
   const [isPreparing, setIsPreparing] = useState(false)
-  const [debugLines, setDebugLines] = useState<string[]>([])
-  const [debugVisible, setDebugVisible] = useState(false)
-
-  function addDebug(msg: string) {
-    setDebugLines(prev => [...prev.slice(-7), `${new Date().toLocaleTimeString()}: ${msg}`])
-  }
-
-  useEffect(() => {
-    addDebug('[IsoCharacter] mounted')
-  }, [])
 
   const posRef = useRef<GridPos>({ col: Math.floor(gridCols / 2), row: Math.floor(gridRows / 2) })
   const modeRef = useRef<CharacterMode>({ type: 'wander' })
@@ -214,11 +204,6 @@ export default function IsoCharacter({
 
     const zoneType = ACTION_ZONE[pendingAction.action]
     const zone = zonesRef.current.find(z => z.zone_type === zoneType)
-    // debug: log pending action and zone discovery
-    try {
-      console.debug('[IsoCharacter] pendingAction', pendingAction.action, 'zoneType', zoneType, 'foundZone', !!zone, zone)
-      addDebug(`[IsoCharacter] pendingAction ${pendingAction.action} zoneType ${zoneType} foundZone ${!!zone}`)
-    } catch {}
 
     // หา cell ติดกับ zone ที่เดินได้ใกล้ character ที่สุด
     const occupied = buildOccupied(zonesRef.current)
@@ -228,14 +213,11 @@ export default function IsoCharacter({
       if (result) {
         targetRef.current = result.target
         const path = result.path
-        try {
-          console.debug('[IsoCharacter] target zone reachable', targetRef.current, 'path length', path.length)
-          addDebug(`[IsoCharacter] target zone reachable ${targetRef.current.col},${targetRef.current.row} len ${path.length}`)
-        } catch {}
         modeRef.current = {
           type: 'walking_to',
           path,
           onArrive: () => {
+            console.debug('[IsoCharacter] ARRIVED — firing onArrive for', pendingAction.action)
             modeRef.current = { type: 'acting', action: pendingAction.action }
             onArrive(pendingAction.action)
             setTimeout(() => {
@@ -255,14 +237,9 @@ export default function IsoCharacter({
     targetRef.current = target
 
     const path = bfsPath(posRef.current, targetRef.current, gridCols, gridRows, occupied)
-    try {
-      console.debug('[IsoCharacter] computed path length', path.length, 'target', targetRef.current)
-      addDebug(`[IsoCharacter] computed path length ${path.length} target ${targetRef.current.col},${targetRef.current.row}`)
-    } catch {}
 
     // If path is empty but target is not current position, try to find a nearby reachable cell
     if (path.length === 0 && !(posRef.current.col === targetRef.current.col && posRef.current.row === targetRef.current.row)) {
-      try { console.debug('[IsoCharacter] empty path — attempting to find nearby reachable cell') } catch {}
       const MAX_RADIUS = Math.max(gridCols, gridRows)
       let foundPath: GridPos[] | null = null
       let foundTarget: GridPos | null = null
@@ -283,11 +260,11 @@ export default function IsoCharacter({
       }
       if (foundPath && foundTarget) {
         targetRef.current = foundTarget
-        try { console.debug('[IsoCharacter] found alternative path length', foundPath.length, 'target', foundTarget); addDebug(`[IsoCharacter] found alternative path length ${foundPath.length}`) } catch {}
         modeRef.current = {
           type: 'walking_to',
           path: foundPath,
           onArrive: () => {
+            console.debug('[IsoCharacter] ARRIVED — firing onArrive for', pendingAction.action)
             modeRef.current = { type: 'acting', action: pendingAction.action }
             onArrive(pendingAction.action)
             setTimeout(() => {
@@ -306,6 +283,7 @@ export default function IsoCharacter({
       type: 'walking_to',
       path,
       onArrive: () => {
+        console.debug('[IsoCharacter] ARRIVED — firing onArrive for', pendingAction.action)
         modeRef.current = { type: 'acting', action: pendingAction.action }
         onArrive(pendingAction.action)
         setTimeout(() => {
@@ -413,25 +391,7 @@ export default function IsoCharacter({
   // show a brief preparing visual when parent signals preparingAction
   useEffect(() => {
     setIsPreparing(!!preparingAction)
-    if (preparingAction) {
-      addDebug(`[IsoCharacter] preparingAction ${preparingAction}`)
-      setDebugVisible(true)
-    }
   }, [preparingAction])
-
-  useEffect(() => {
-    if (pendingAction) {
-      addDebug(`[IsoCharacter] pendingAction prop ${pendingAction.action} ts ${pendingAction.ts}`)
-      setDebugVisible(true)
-    } else {
-      addDebug('[IsoCharacter] pendingAction prop null')
-    }
-  }, [pendingAction?.action, pendingAction?.ts])
-
-  useEffect(() => {
-    if (!pendingAction) return
-    addDebug(`[IsoCharacter] pendingAction effect fired for ${pendingAction.action} ts ${pendingAction.ts}`)
-  }, [pendingAction?.action, pendingAction?.ts])
 
   const screen = isoToScreen(pos.col, pos.row, tileW, tileH, originX, originY)
   const rect = containerRef.current?.getBoundingClientRect()
@@ -508,22 +468,6 @@ export default function IsoCharacter({
         )}
       </div>
     </div>
-    <>
-      <div style={{ position: 'fixed', left: 12, bottom: 12, zIndex: 999999, pointerEvents: 'auto' }}>
-        <button onClick={() => setDebugVisible(v => !v)} style={{ width: 36, height: 36, borderRadius: 18, background: 'rgba(0,0,0,0.7)', color: '#fff', border: 'none', cursor: 'pointer' }}>{debugVisible ? '×' : 'Dbg'}</button>
-      </div>
-      {debugVisible && (
-        <div style={{ position: 'fixed', left: 12, bottom: 60, width: 360, maxHeight: 300, overflow: 'auto', background: 'rgba(0,0,0,0.8)', color: '#fff', fontSize: 12, padding: 8, borderRadius: 8, zIndex: 999999, pointerEvents: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <div style={{ fontWeight: 600 }}>IsoCharacter Debug</div>
-            <div style={{ opacity: 0.7, fontSize: 11 }}>{new Date().toLocaleTimeString()}</div>
-          </div>
-          {debugLines.length === 0 ? <div style={{ opacity: 0.7 }}>no logs</div> : debugLines.slice().reverse().map((l, i) => (
-            <div key={i} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l}</div>
-          ))}
-        </div>
-      )}
-    </>
     </>
   )
 }
