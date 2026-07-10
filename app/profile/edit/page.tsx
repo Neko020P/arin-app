@@ -33,18 +33,46 @@ export default function EditProfilePage() {
   useEffect(() => {
     async function loadProfile() {
       console.log('loadProfile start')
+      console.log('supabase auth object:', {
+        auth: supabase.auth,
+        getUser: typeof supabase.auth.getUser,
+        getSession: typeof supabase.auth.getSession,
+      })
 
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-        console.log('session result:', { sessionData, sessionError })
+        const authPromise = supabase.auth.getUser()
+        console.log('authPromise created', authPromise)
 
-        if (sessionError) {
-          console.error('Supabase session error:', sessionError)
+        type AuthResponse = Awaited<ReturnType<typeof supabase.auth.getUser>>
+        type AuthResult = AuthResponse | { timedOut: true }
+
+        const authResult = await Promise.race([
+          authPromise,
+          new Promise<AuthResult>(resolve => setTimeout(() => resolve({ timedOut: true }), 8000)),
+        ])
+
+        let user = null
+        let authError = null
+
+        if ('timedOut' in authResult) {
+          console.warn('Supabase auth.getUser() timed out, attempting getSession() fallback')
+
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+          console.log('getSession fallback result:', { sessionData, sessionError })
+          authError = sessionError
+          user = sessionData?.session?.user ?? null
+        } else {
+          console.log('auth result:', authResult)
+          authError = authResult.error ?? null
+          user = authResult.data?.user ?? null
+        }
+
+        if (authError) {
+          console.error('Supabase auth error:', authError)
           setError('Unable to verify your session. Please login again.')
           return router.push('/login')
         }
 
-        const user = sessionData?.session?.user ?? null
         if (!user) {
           console.log('No authenticated user found, redirecting to login')
           return router.push('/login')
