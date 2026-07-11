@@ -1,0 +1,205 @@
+// arin/app/profile/edit/EditProfileForm.tsx
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { updateProfile } from './actions'
+
+type Profile = {
+  username: string
+  display_name: string
+  bio: string
+  avatar_url: string
+  social_links: string[]
+}
+
+export default function EditProfileForm({ initialProfile }: { initialProfile: Profile }) {
+  const router = useRouter()
+
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+
+  const [form, setForm] = useState<Profile>({
+    username: initialProfile.username ?? '',
+    display_name: initialProfile.display_name ?? '',
+    bio: initialProfile.bio ?? '',
+    avatar_url: initialProfile.avatar_url ?? '',
+    social_links: initialProfile.social_links?.length ? initialProfile.social_links : [''],
+  })
+
+  function updateField(field: keyof Profile, value: string) {
+    setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  function updateSocialLink(index: number, value: string) {
+    const updated = [...form.social_links]
+    updated[index] = value
+    setForm(prev => ({ ...prev, social_links: updated }))
+  }
+
+  function addSocialLink() {
+    if (form.social_links.length >= 5) return
+    setForm(prev => ({ ...prev, social_links: [...prev.social_links, ''] }))
+  }
+
+  function removeSocialLink(index: number) {
+    const updated = form.social_links.filter((_, i) => i !== index)
+    setForm(prev => ({ ...prev, social_links: updated.length ? updated : [''] }))
+  }
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    setSuccess(false)
+
+    const result = await updateProfile(form)
+
+    if (result.error) {
+      setError(result.error)
+    } else {
+      setSuccess(true)
+      setTimeout(() => router.push(`/profile/${result.username}`), 1000)
+    }
+
+    setSaving(false)
+  }
+
+  return (
+    <main className="min-h-screen py-12 px-4">
+      <div className="max-w-lg mx-auto">
+        <h1 className="text-2xl font-medium mb-8">Edit Profile</h1>
+
+        <form onSubmit={handleSave} className="flex flex-col gap-6">
+
+          {/* Username */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Username</label>
+            <div className="flex items-center border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-400">
+              <span className="px-3 py-2 bg-gray-50 text-gray-400 text-sm border-r">
+                arin.art/
+              </span>
+              <input
+                type="text"
+                required
+                value={form.username}
+                onChange={e => updateField('username', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                placeholder="yourname"
+                className="flex-1 px-3 py-2 text-sm outline-none"
+              />
+            </div>
+            <p className="text-xs text-gray-400">Lowercase and numbers only</p>
+          </div>
+
+          {/* Display Name */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Display Name</label>
+            <input
+              type="text"
+              value={form.display_name}
+              onChange={e => updateField('display_name', e.target.value)}
+              placeholder="Full name or alias"
+              className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
+            />
+          </div>
+
+          {/* Bio */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Bio</label>
+            <textarea
+              value={form.bio}
+              onChange={e => updateField('bio', e.target.value)}
+              placeholder="Brief self-introduction..."
+              rows={4}
+              maxLength={300}
+              className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+            />
+            <p className="text-xs text-gray-400 text-right">
+              {form.bio.length}/300
+            </p>
+          </div>
+
+          {/* Avatar URL */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Avatar URL</label>
+            <input
+              type="url"
+              value={form.avatar_url}
+              onChange={e => updateField('avatar_url', e.target.value)}
+              placeholder="https://..."
+              className="border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
+            />
+            {form.avatar_url && (
+              <img
+                src={form.avatar_url}
+                alt="avatar preview"
+                className="w-16 h-16 rounded-full object-cover mt-2"
+                onError={e => (e.currentTarget.style.display = 'none')}
+              />
+            )}
+          </div>
+
+          {/* Social Links */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Social Links</label>
+            {form.social_links.map((link, index) => (
+              <div key={index} className="flex gap-2">
+                <input
+                  type="url"
+                  value={link}
+                  onChange={e => updateSocialLink(index, e.target.value)}
+                  placeholder="https://twitter.com/yourname"
+                  className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeSocialLink(index)}
+                  className="px-3 py-2 text-gray-400 hover:text-red-400 text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            {form.social_links.length < 5 && (
+              <button
+                type="button"
+                onClick={addSocialLink}
+                className="text-sm text-purple-600 hover:underline text-left"
+              >
+                + Add link
+              </button>
+            )}
+          </div>
+
+          {/* Error / Success */}
+          {error && (
+            <p className="text-sm text-red-500">{error}</p>
+          )}
+          {success && (
+            <p className="text-sm text-green-500">Save successful. Redirecting to profile page...</p>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-purple-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </main>
+  )
+}
