@@ -80,12 +80,14 @@ export default function NavbarClient({ profile: initialProfile }: { profile: Pro
 
   return (
     <div className="flex items-center gap-3">
-      <Link
+      {/* à¹à¸à¹ <a> à¹à¸à¸ <Link> à¹à¸à¸¢à¸à¸±à¹à¸à¹à¸: /dashboard/upload à¹à¸à¹à¸ server component
+          à¸à¸µà¹à¸à¹à¸­à¸à¸­à¹à¸²à¸ cookie/session à¸à¸µà¹à¹à¸à¸´à¹à¸ refresh à¹à¸¥à¸·à¸­à¸ hard navigate à¹à¸à¸·à¹à¸­à¸à¸±à¸ cookie à¹à¸à¹à¸à¸à¸£à¸à¸à¹à¸­à¸ mount */}
+      <a
         href="/dashboard/upload"
         className="text-sm bg-purple-600 text-white px-4 py-1.5 rounded-full hover:bg-purple-700 transition-colors"
       >
         + Upload
-      </Link>
+      </a>
 
       <div className="relative" ref={ref}>
         <button
