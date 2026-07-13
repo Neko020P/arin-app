@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/dist/client/link'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -52,12 +52,12 @@ export default function CharacterActions({
         {isPublic ? '🔒 Make Private' : '🌐 Make Public'}
       </button>
 
-      <Link
+      <a
         href={`/dashboard/characters/${characterId}/edit`}
         className="border rounded-lg py-2.5 text-sm text-center hover:bg-gray-50 transition-colors"
       >
          Edit Character
-      </Link>
+      </a>
       
       <Link
         href={`/character/${characterId}`}

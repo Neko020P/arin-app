@@ -11,10 +11,15 @@ type Props = {
     lastAction: string | null
     hasVisitor: boolean
     onTrigger: (text: string) => void
+    // แสดงปุ่ม/แผง "Chat Messages" ให้แก้ไขได้หรือไม่ — แยกจาก isOwner เพราะ
+    // component นี้ถูก mount สองที่: sidebar (มีหน้าที่แค่ trigger คำพูดลอย ๆ
+    // เท่านั้น ไม่ควรโชว์ปุ่มแก้ไขซ้ำ) กับใน Settings modal (โชว์ปุ่มแก้ไขได้)
+    showControls?: boolean
 }
 
 export default function ChatManager({
     characterId, initialMessages, isOwner, lastAction, hasVisitor, onTrigger,
+    showControls = true,
 }: Props) {
     const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
     const [editing, setEditing] = useState(false)
@@ -73,11 +78,9 @@ export default function ChatManager({
         setSaving(false)
     }
 
-    //if (!isOwner) return null
-
     return (
         <>
-            {isOwner && (
+            {isOwner && showControls && (
                 <div>
                     <button onClick={() => { setDraft(messages.map(m => m.text)); setEditing(e => !e) }}
                         className="w-full flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 text-white/70 hover:bg-white/10 text-sm transition-colors">

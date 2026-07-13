@@ -62,12 +62,12 @@ export default async function DashboardPage() {
               Here's a quick overview of your profile and recent activity.
             </p>
           </div>
-          <Link
+          <a
             href="/dashboard/upload"
             className="bg-purple-600 text-white text-sm px-5 py-2 rounded-full hover:bg-purple-700 transition-colors"
           >
             + Upload Artwork
-          </Link>
+          </a>
         </div>
 
         {/* Stats cards */}
@@ -123,12 +123,12 @@ export default async function DashboardPage() {
             ) : (
               <div className="border-2 border-dashed border-gray-200 rounded-xl py-12 flex flex-col items-center gap-3">
                 <p className="text-gray-400 text-sm">You haven't uploaded any artworks yet.</p>
-                <Link
+                <a
                   href="/dashboard/upload"
                   className="text-sm text-purple-600 hover:underline"
                 >
                   Upload your first artwork →
-                </Link>
+                </a>
               </div>
             )}
           </div>

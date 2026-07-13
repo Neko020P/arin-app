@@ -61,12 +61,12 @@ export default async function CommissionsPage() {
             <h1 className="text-2xl font-medium">Commissions</h1>
             <p className="text-sm text-gray-400 mt-1">Manage listing and orders</p>
           </div>
-          <Link
+          <a
             href="/dashboard/commissions/new"
             className="bg-purple-600 text-white text-sm px-5 py-2 rounded-full hover:bg-purple-700 transition-colors"
           >
             + Create Listing
-          </Link>
+          </a>
         </div>
 
         {/* Stats */}
@@ -128,12 +128,12 @@ export default async function CommissionsPage() {
           ) : (
             <div className="bg-white rounded-2xl py-12 text-center shadow-sm">
               <p className="text-gray-400 text-sm mb-3">No listings available</p>
-              <Link
+              <a
                 href="/dashboard/commissions/new"
                 className="text-sm text-purple-600 hover:underline"
               >
                 Create your first listing →
-              </Link>
+              </a>
             </div>
           )}
         </div>

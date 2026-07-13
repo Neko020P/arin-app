@@ -545,30 +545,6 @@ export default function RoomClient({
         {/* ── RIGHT PANEL ── */}
         <aside style={{ borderLeft: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '20px 16px', gap: 14 }}>
 
-          {/* Character card */}
-          <div style={{ borderRadius: 14, overflow: 'hidden', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            {avatarUrl && (
-              <div style={{ width: '100%', height: 90, overflow: 'hidden', position: 'relative' }}>
-                <img src={avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(12px) brightness(0.4)', transform: 'scale(1.1)' }} />
-              </div>
-            )}
-            <div style={{ padding: '12px 14px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {avatarUrl
-                  ? <img src={avatarUrl} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.15)', flexShrink: 0 }} />
-                  : <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>🐾</div>
-                }
-                <div>
-                  <div style={{ color: 'white', fontWeight: 600, fontSize: 14 }}>{characterName}</div>
-                  <div style={{ marginTop: 3, display: 'inline-flex', alignItems: 'center', gap: 4, background: `${badge.color}18`, border: `1px solid ${badge.color}30`, borderRadius: 20, padding: '2px 8px' }}>
-                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: badge.color, flexShrink: 0 }} />
-                    <span style={{ color: badge.color, fontSize: 10, fontWeight: 500 }}>{badge.label}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Stats */}
           <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px 14px 16px', display: 'flex', flexDirection: 'column', gap: 13 }}>
             <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase' }}>Status</span>
@@ -629,6 +605,7 @@ export default function RoomClient({
             characterId={characterId}
             initialMessages={(initialCharacter.chat_messages as any[]) ?? []}
             isOwner={isOwner}
+            showControls={false}
             lastAction={pendingAction?.action ?? null}
             hasVisitor={visitors.length > 0}
             onTrigger={setChatText}
@@ -679,6 +656,7 @@ export default function RoomClient({
                   characterId={characterId}
                   initialMessages={(initialCharacter.chat_messages as any[]) ?? []}
                   isOwner={isOwner}
+                  showControls={true}
                   lastAction={pendingAction?.action ?? null}
                   hasVisitor={visitors.length > 0}
                   onTrigger={setChatText}

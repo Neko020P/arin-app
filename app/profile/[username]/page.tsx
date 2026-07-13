@@ -2,7 +2,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import Link from 'next/link'
 import ProfileTabs from './ProfileTabs'
 
 export default async function ProfilePage({
@@ -107,10 +106,10 @@ export default async function ProfilePage({
 
                     {/* Owner actions */}
                     {isOwner && (
-                        <Link href="/profile/edit"
+                        <a href="/profile/edit"
                             className="text-xs border dark:border-white/20 px-4 py-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors shrink-0">
                             Edit Profile
-                        </Link>
+                        </a>
                     )}
                 </div>
 

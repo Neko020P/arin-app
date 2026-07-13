@@ -121,14 +121,17 @@ export default async function PublicCharacterPage({
               </div>
             </Link>
 
-            {/* Room button */}
+            {/* Room button — ใช้ <a> แทน <Link> โดยตั้งใจ: หน้า room เป็น client
+                component ที่ต้องอ่าน cookie/session ทันทีตอน mount, soft
+                navigation ของ Link บางจังหวะ mount เร็วกว่า chunk/cookie จะนิ่ง
+                ทำให้อัพโหลดรูปใน settings ค้างจนกว่าจะ refresh */}
             <div>
-              <Link
+              <a
                 href={`/character/${character.id}/room`}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm rounded-full hover:bg-purple-700 transition-colors"
               >
                 Room
-              </Link>
+              </a>
             </div>
           </div>
         </div>

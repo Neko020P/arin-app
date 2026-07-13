@@ -80,14 +80,12 @@ export default function NavbarClient({ profile: initialProfile }: { profile: Pro
 
   return (
     <div className="flex items-center gap-3">
-      {/* à¹à¸à¹ <a> à¹à¸à¸ <Link> à¹à¸à¸¢à¸à¸±à¹à¸à¹à¸: /dashboard/upload à¹à¸à¹à¸ server component
-          à¸à¸µà¹à¸à¹à¸­à¸à¸­à¹à¸²à¸ cookie/session à¸à¸µà¹à¹à¸à¸´à¹à¸ refresh à¹à¸¥à¸·à¸­à¸ hard navigate à¹à¸à¸·à¹à¸­à¸à¸±à¸ cookie à¹à¸à¹à¸à¸à¸£à¸à¸à¹à¸­à¸ mount */}
-      <a
+      <Link
         href="/dashboard/upload"
         className="text-sm bg-purple-600 text-white px-4 py-1.5 rounded-full hover:bg-purple-700 transition-colors"
       >
         + Upload
-      </a>
+      </Link>
 
       <div className="relative" ref={ref}>
         <button
@@ -114,10 +112,10 @@ export default function NavbarClient({ profile: initialProfile }: { profile: Pro
               <p className="text-xs text-gray-400 truncate">@{profile.username}</p>
             </div>
 
-            <Link href={`/profile/${profile.username}`} onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Profile</Link>
-            <Link href="/dashboard/commissions" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Commissions</Link>
-            <Link href="/dashboard/characters" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Characters</Link>
-            <Link href="/dashboard" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Dashboard</Link>
+            <a href={`/profile/${profile.username}`} onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Profile</a>
+            <a href="/dashboard/commissions" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Commissions</a>
+            <a href="/dashboard/characters" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Characters</a>
+            <a href="/dashboard" onClick={() => setOpen(false)} className="block px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Dashboard</a>
 
             <div className="border-t dark:border-gray-700 mt-1">
               <form action="/auth/signout" method="POST">

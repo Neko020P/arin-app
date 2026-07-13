@@ -127,12 +127,12 @@ export default async function ArtworkDetailPage({
                             <div className="flex items-start justify-between gap-3">
                                 <h1 className="text-2xl font-medium leading-snug">{artwork.title}</h1>
                                 {isOwner && (
-                                    <Link
+                                    <a
                                         href={`/dashboard/artwork/${artwork.id}/edit`}
                                         className="text-xs border px-3 py-1.5 rounded-full hover:bg-gray-50 shrink-0 transition-colors"
                                     >
-                                        Edit
-                                    </Link>
+                                         Edit
+                                    </a>
                                 )}
                             </div>
                             <p className="text-xs text-gray-400 mt-1">

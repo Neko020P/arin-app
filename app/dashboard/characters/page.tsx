@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 
 export default async function CharactersPage() {
   const supabase = await createClient()
@@ -35,12 +34,12 @@ export default async function CharactersPage() {
             <h1 className="text-2xl font-medium">Characters</h1>
             <p className="text-sm text-gray-400 mt-1">Your characters and lore</p>
           </div>
-          <Link
+          <a
             href="/dashboard/characters/new"
             className="bg-purple-600 text-white text-sm px-5 py-2 rounded-full hover:bg-purple-700 transition-colors"
           >
             + Create Character
-          </Link>
+          </a>
         </div>
 
         {/* Stats */}
@@ -63,7 +62,7 @@ export default async function CharactersPage() {
         {characters && characters.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {characters.map(c => (
-              <Link
+              <a
                 key={c.id}
                 href={`/dashboard/characters/${c.id}`}
                 className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex gap-4 items-start"
@@ -111,19 +110,19 @@ export default async function CharactersPage() {
                     </div>
                   )}
                 </div>
-              </Link>
+              </a>
             ))}
           </div>
         ) : (
           <div className="bg-white rounded-2xl py-20 text-center shadow-sm">
             <p className="text-4xl mb-4">🎨</p>
             <p className="text-gray-400 text-sm mb-3">ยังไม่มีตัวละคร</p>
-            <Link
+            <a
               href="/dashboard/characters/new"
               className="text-sm text-purple-600 hover:underline"
             >
               สร้างตัวละครแรกของคุณ →
-            </Link>
+            </a>
           </div>
         )}
 

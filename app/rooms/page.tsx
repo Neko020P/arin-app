@@ -57,7 +57,7 @@ export default async function RoomsPage() {
             {characters.map((c) => {
               const owner = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles as any
               return (
-                <Link
+                <a
                   key={c.id}
                   href={`/character/${c.id}/room`}
                   className="group rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 hover:border-purple-300 dark:hover:border-purple-500/40 transition-colors shadow-sm hover:shadow-md"
@@ -114,7 +114,7 @@ export default async function RoomsPage() {
                       </span>
                     )}
                   </div>
-                </Link>
+                </a>
               )
             })}
           </div>
