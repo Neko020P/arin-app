@@ -25,18 +25,35 @@ export default function TransferAcceptClient({
   async function handleAccept() {
     setLoading(true)
     setError('')
-    const res = await fetch('/api/transfer/accept', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      setError(data.error ?? 'เกิดข้อผิดพลาด')
+    try {
+      const res = await fetch('/api/transfer/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      })
+
+      let data: { error?: string; success?: boolean } = {}
+      try {
+        data = await res.json()
+      } catch {
+        // response ไม่ใช่ JSON ที่ถูกต้อง (เช่น หน้า error ของ server) —
+        // อย่างน้อยยังโชว์ error ให้ผู้ใช้เห็นแทนที่จะเงียบไปเลย
+        setError(`เซิร์ฟเวอร์ตอบกลับผิดปกติ (status ${res.status})`)
+        setLoading(false)
+        return
+      }
+
+      if (!res.ok) {
+        setError(data.error ?? `เกิดข้อผิดพลาด (status ${res.status})`)
+        setLoading(false)
+        return
+      }
+
+      router.push(`/character/${characterId}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดที่ไม่คาดคิด')
       setLoading(false)
-      return
     }
-    router.push(`/character/${characterId}`)
   }
 
   return (
@@ -54,7 +71,7 @@ export default function TransferAcceptClient({
         รับ Character
       </h1>
       <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 24 }}>
-        <b style={{ color: 'white' }}>{fromUsername}</b> wants to transfer the character to you
+        <b style={{ color: 'white' }}>{fromUsername}</b> ต้องการโอน character ให้คุณ
       </p>
 
       {/* Character card */}
@@ -86,7 +103,7 @@ export default function TransferAcceptClient({
       </div>
 
       <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, marginBottom: 20 }}>
-        ⏰ link will expire in {expiresIn} hour{expiresIn !== 1 ? 's' : ''}
+        ⏰ link หมดอายุใน {expiresIn} ชั่วโมง
       </p>
 
       {error && (
